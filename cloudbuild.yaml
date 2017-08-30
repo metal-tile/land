@@ -5,6 +5,8 @@ steps:
 - name: 'gcr.io/cloud-builders/go'
   args: ['generate']
   env: ['PROJECT_ROOT=github.com/metal-tile/land']
+- name: 'gcr.io/cloud-builders/go'
+  args: ['test', '.']
   env: ['PROJECT_ROOT=github.com/metal-tile/land']
 - name: 'gcr.io/cloud-builders/go'
   args: ['install', '-a', '-ldflags', "'-s'", '-installsuffix', 'cgo', 'github.com/metal-tile/land']
@@ -14,6 +16,6 @@ steps:
     'GOOS=linux'
   ]
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '--tag=gcr.io/$PROJECT_ID/testapp', '.']
+  args: ['build', '--tag=gcr.io/$PROJECT_ID/metal-tile/land', '.']
 
-images: ['gcr.io/$PROJECT_ID/testapp']
+images: ['gcr.io/$PROJECT_ID/metal-tile/land']
