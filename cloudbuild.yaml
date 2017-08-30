@@ -1,0 +1,15 @@
+steps:
+- name: 'gcr.io/cloud-builders/go'
+  args: ['get', './...']
+  env: ['GOPATH=/workspace']
+  id: 'go-get'
+- name: 'gcr.io/cloud-builders/go'
+  args: ['build', '-o', '/workspace', 'land']
+  id: 'go-build'
+  waitFor: ['go-get']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/metal-tile-dev0/$BRANCH_NAME/land/$REPO_NAME:$COMMIT_SHA', '']
+  waitFor: ['go-build']
+
+images: ['gcr.io/metal-tile-dev0/$BRANCH_NAME/land/$REPO_NAME:$COMMIT_SHA']
