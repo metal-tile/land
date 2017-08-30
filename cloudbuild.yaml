@@ -14,6 +14,6 @@ steps:
     'GOOS=linux'
   ]
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/metal-tile-dev0/$BRANCH_NAME/land/$REPO_NAME:$COMMIT_SHA', '.']
+  args: ['build', '--tag=gcr.io/$PROJECT_ID/testapp', '.']
 
-images: ['gcr.io/metal-tile-dev0/$BRANCH_NAME/land/$REPO_NAME:$COMMIT_SHA']
+images: ['gcr.io/$PROJECT_ID/testapp']
