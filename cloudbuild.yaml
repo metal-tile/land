@@ -1,15 +1,19 @@
 steps:
 - name: 'gcr.io/cloud-builders/go'
   args: ['get', './...']
-  env: ['GOPATH=/workspace']
-  id: 'go-get'
+  env: ['PROJECT_ROOT=github.com/metal-tile/land']
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o', '/workspace', 'land']
-  id: 'go-build'
-  waitFor: ['go-get']
-
+  args: ['generate']
+  env: ['PROJECT_ROOT=github.com/metal-tile/land']
+  env: ['PROJECT_ROOT=github.com/metal-tile/land']
+- name: 'gcr.io/cloud-builders/go'
+  args: ['install', '-a', '-ldflags', "'-s'", '-installsuffix', 'cgo', 'github.com/metal-tile/land']
+  env: [
+    'PROJECT_ROOT=github.com/metal-tile/land',
+    'CGO_ENABLED=0',
+    'GOOS=linux'
+  ]
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/metal-tile-dev0/$BRANCH_NAME/land/$REPO_NAME:$COMMIT_SHA', '']
-  waitFor: ['go-build']
+  args: ['build', '-t', 'gcr.io/metal-tile-dev0/$BRANCH_NAME/land/$REPO_NAME:$COMMIT_SHA', '.']
 
 images: ['gcr.io/metal-tile-dev0/$BRANCH_NAME/land/$REPO_NAME:$COMMIT_SHA']
