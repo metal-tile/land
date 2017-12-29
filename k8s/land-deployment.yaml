@@ -1,0 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    name: land-node
+  name: land-node
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: land-node
+    spec:
+      containers:
+      - image: gcr.io/metal-tile-dev1/metal-tile/land
+        name: land-node
