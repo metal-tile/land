@@ -37,10 +37,22 @@
   version = "v2.0.0"
 
 [[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/sinmetal/slog"
   packages = ["."]
   revision = "aeab4f7aac51d03283d936409e98334b31930858"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/tenntenn/sync"
+  packages = ["recoverable"]
+  revision = "0ae3393d20ebf1e8c60cf1ee553e363a232fa030"
 
 [[projects]]
   name = "go.opencensus.io"
@@ -187,6 +199,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6be6453d7417c8fbd67191b48de80a18e3a5ef35efa7364733671cc3839b435b"
+  inputs-digest = "effe157faba5242a7c43d5d33e0ca67498fa6e601fca35e246bc4d50d0436fbd"
   solver-name = "gps-cdcl"
   solver-version = 1
