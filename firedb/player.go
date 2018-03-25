@@ -46,11 +46,7 @@ type PlayerPosition struct {
 
 // SetUp is SetUp
 func SetUp(ctx context.Context, projectID string) error {
-	if err := createWithSetClient(ctx, projectID); err != nil {
-		return err
-	}
-
-	return nil
+	return createWithSetClient(ctx, projectID)
 }
 
 func createWithSetClient(ctx context.Context, projectID string) error {
@@ -65,6 +61,7 @@ func createWithSetClient(ctx context.Context, projectID string) error {
 	return nil
 }
 
+// GetPlayerPositions is PlayerPositionをFirestoreから取得する
 func (s *PlayerStoreImple) GetPlayerPositions(ctx context.Context) ([]*PlayerPosition, error) {
 	ds, err := db.Collection("world-default-player-position").Documents(ctx).GetAll()
 	if err != nil {
