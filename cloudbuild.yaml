@@ -1,9 +1,9 @@
 steps:
 - name: 'gcr.io/cloud-builders/go'
-  args: ['test', '-v', '-race', './...']
+  args: ['test', '.']
   env: ['PROJECT_ROOT=github.com/metal-tile/land']
 - name: 'gcr.io/cloud-builders/go'
-  args: ['install', '-race', '-a', '-ldflags', '-s', '-installsuffix', 'cgo', 'github.com/metal-tile/land']
+  args: ['install', '-a', '-ldflags', '-s', '-installsuffix', 'cgo', 'github.com/metal-tile/land']
   env: [
     'PROJECT_ROOT=github.com/metal-tile/land',
     'CGO_ENABLED=0',
