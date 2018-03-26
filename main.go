@@ -36,9 +36,7 @@ func main() {
 
 	go func() {
 		c := &MonsterClient{
-			DQN: &dqn.Client{
-				DQN: &dqn.DQN{},
-			},
+			DQN: dqn.NewClient(),
 		}
 		ch <- RunControlMonster(c)
 	}()

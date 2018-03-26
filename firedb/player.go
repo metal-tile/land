@@ -2,13 +2,7 @@ package firedb
 
 import (
 	"context"
-	"sync"
-
-	"cloud.google.com/go/firestore"
 )
-
-var mu sync.RWMutex
-var db *firestore.Client
 
 // PlayerStore is PlayerStore
 type PlayerStore interface {
@@ -42,23 +36,6 @@ type PlayerPosition struct {
 	IsMove bool    `json:"isMove"`
 	X      float64 `json:"x"`
 	Y      float64 `json:"y"`
-}
-
-// SetUp is SetUp
-func SetUp(ctx context.Context, projectID string) error {
-	return createWithSetClient(ctx, projectID)
-}
-
-func createWithSetClient(ctx context.Context, projectID string) error {
-	client, err := firestore.NewClient(ctx, projectID)
-	if err != nil {
-		return err
-	}
-	mu.Lock()
-	defer mu.Unlock()
-	db = client
-
-	return nil
 }
 
 // GetPlayerPositions is PlayerPositionをFirestoreから取得する

@@ -12,8 +12,7 @@ import (
 
 // MonsterClient is Monsterに関連する処理を行うClient
 type MonsterClient struct {
-	// SLog *slog.Log
-	DQN *dqn.Client
+	DQN dqn.Client
 }
 
 // RunControlMonster is MonsterのControlを開始する
@@ -30,7 +29,6 @@ func RunControlMonster(client *MonsterClient) error {
 					log.Errorf("failed UpdateMonster. %+v", err)
 				}
 
-				// client.SLog.Flush() // TODO ctx baseでログをまとめるようにする
 				log.Flush()
 			}
 		}
@@ -52,7 +50,8 @@ func (client *MonsterClient) UpdateMonster(slog *slog.Log) error {
 
 	// TODO 適当に値を入れてみる
 	ctx := context.Background()
-	return firedb.UpdateMonsterPositions(ctx, &firedb.MonsterPosition{
+	ms := firedb.NewMonsterStore()
+	return ms.UpdatePosition(ctx, &firedb.MonsterPosition{
 		ID:    "dummy",
 		Angle: 180,
 		X:     1000,

@@ -66,22 +66,31 @@ type Answer struct {
 	Speed  float64
 }
 
-// API is DQN APIのinterface
-type API interface {
+// Client is DQN APIを実行するClient
+type Client interface {
 	Prediction(log *slog.Log, body *Payload) (*Answer, error)
 }
 
-// Client is DQN APIを実行するCient
-type Client struct {
-	// Log *slog.Log
-	DQN API
+var client Client
+
+// dqnImpl is DQN APIのためのデフォルト実装
+type dqnImpl struct{}
+
+// NewClient is Clientを返す
+func NewClient() Client {
+	if client != nil {
+		return client
+	}
+	return &dqnImpl{}
 }
 
-// DQN is DQN APIのためのデフォルト実装
-type DQN struct{}
+// SetDummyClient is UnitTestのために実装を差し替えるためのもの
+func SetDummyClient(dummy Client) {
+	client = dummy
+}
 
 // Prediction is DQN APIを実行する実装
-func (d *DQN) Prediction(log *slog.Log, body *Payload) (*Answer, error) {
+func (d *dqnImpl) Prediction(log *slog.Log, body *Payload) (*Answer, error) {
 	b, err := json.Marshal(body)
 	if err != nil {
 		log.Error(err.Error())
@@ -122,10 +131,10 @@ func (d *DQN) Prediction(log *slog.Log, body *Payload) (*Answer, error) {
 		return nil, err
 	}
 
-	return d.buildDQNAnswer(&dqnRes)
+	return buildDQNAnswer(&dqnRes)
 }
 
-func (d *DQN) buildDQNAnswer(res *apiResponse) (*Answer, error) {
+func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 	score := &struct {
 		None  float64
 		Left  float64
@@ -187,9 +196,4 @@ func (d *DQN) buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		}, nil
 	}
 
-}
-
-// Prediction is DQN API 呼び出し
-func (c *Client) Prediction(log *slog.Log, body *Payload) (*Answer, error) {
-	return c.DQN.Prediction(log, body)
 }
