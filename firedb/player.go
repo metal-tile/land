@@ -2,13 +2,7 @@ package firedb
 
 import (
 	"context"
-	"sync"
-
-	"cloud.google.com/go/firestore"
 )
-
-var mu sync.RWMutex
-var db *firestore.Client
 
 // PlayerStore is PlayerStore
 type PlayerStore interface {
@@ -44,27 +38,7 @@ type PlayerPosition struct {
 	Y      float64 `json:"y"`
 }
 
-// SetUp is SetUp
-func SetUp(ctx context.Context, projectID string) error {
-	if err := createWithSetClient(ctx, projectID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createWithSetClient(ctx context.Context, projectID string) error {
-	client, err := firestore.NewClient(ctx, projectID)
-	if err != nil {
-		return err
-	}
-	mu.Lock()
-	defer mu.Unlock()
-	db = client
-
-	return nil
-}
-
+// GetPlayerPositions is PlayerPositionをFirestoreから取得する
 func (s *PlayerStoreImple) GetPlayerPositions(ctx context.Context) ([]*PlayerPosition, error) {
 	ds, err := db.Collection("world-default-player-position").Documents(ctx).GetAll()
 	if err != nil {

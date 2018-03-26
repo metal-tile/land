@@ -27,3 +27,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/sinmetal/slog"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/tenntenn/sync"
