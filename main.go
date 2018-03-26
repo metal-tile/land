@@ -42,7 +42,7 @@ func main() {
 	}()
 
 	err = <-ch
-	fmt.Println(err.Error())
+	fmt.Printf("%+v", err)
 }
 
 func watchPlayerPositions() error {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/metal-tile/land/dqn"
@@ -9,7 +10,15 @@ import (
 )
 
 func TestMonsterClient_UpdateMonster(t *testing.T) {
-	dqnDummy := &DQNDummyClient{}
+	dqnDummy := &DQNDummyClient{
+		DummyAnswer: &dqn.Answer{
+			X:      -1,
+			Y:      0,
+			Paused: false,
+			Angle:  0,
+			Speed:  4,
+		},
+	}
 	dqn.SetDummyClient(dqnDummy)
 
 	msDummy := &DummyMonsterStore{}
@@ -21,7 +30,15 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 		DQN: d,
 	}
 
-	if err := client.UpdateMonster(l); err != nil {
+	playerPositionMap := &sync.Map{}
+
+	if err := client.UpdateMonster(l, &firedb.MonsterPosition{
+		ID:    "dummy",
+		X:     950,
+		Y:     1000,
+		Angle: 180,
+		Speed: 4,
+	}, playerPositionMap); err != nil {
 		t.Fatalf("failed UpdateMonster. err=%+v", err)
 	}
 
