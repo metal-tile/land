@@ -52,7 +52,12 @@ func RunControlMonster(client *MonsterClient) error {
 					log.Infof("%s is not cast monsterPositionMap.", monsterID)
 					continue
 				}
-				err := client.UpdateMonster(&log, mob, playerPositionMap)
+				dp, err := BuildDQNPayload(&log, mob, playerPositionMap)
+				if err != nil {
+					log.Infof("failed BuildDQNPayload. %+v,%+v,%+v", mob, playerPositionMap, err)
+					continue
+				}
+				err = client.UpdateMonster(&log, mob, dp)
 				if err != nil {
 					log.Errorf("failed UpdateMonster. %+v", err)
 				}
@@ -64,11 +69,7 @@ func RunControlMonster(client *MonsterClient) error {
 }
 
 // UpdateMonster is DQN Predictionに基づき、Firestore上のMonsterの位置を更新する
-func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPosition, playerPositionMap *sync.Map) error {
-	dp, err := buildDQNPayload(log, mob, playerPositionMap)
-	if err != nil {
-		return errors.Wrap(err, "failed buildDQNPayload")
-	}
+func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPosition, dp *dqn.Payload) error {
 	ans, err := client.DQN.Prediction(log, dp)
 	if err != nil {
 		log.Infof("DQN.Payload %#v", dp)
@@ -87,7 +88,8 @@ func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPos
 	return ms.UpdatePosition(ctx, mob)
 }
 
-func buildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMap *sync.Map) (*dqn.Payload, error) {
+// BuildDQNPayload is DQNに渡すPayloadを構築する
+func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMap *sync.Map) (*dqn.Payload, error) {
 	const dqnLayer = 0
 	const playerLayer = 1
 
@@ -100,9 +102,11 @@ func buildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 	payload.Instances[0].State[(dqn.SenseRangeRow / 2)][(dqn.SenseRangeCol / 2)][dqnLayer] = 1
 
 	mobRow, mobCol := ConvertXYToRowCol(mp.X, mp.Y, 1.0)
+	log.Info("Start playerPositionMap.Range.")
 	playerPositionMap.Range(func(key, value interface{}) bool {
-		p, ok := value.(firedb.PlayerPosition)
+		p, ok := value.(*firedb.PlayerPosition)
 		if !ok {
+			log.Infof("failed cast firedb.PlayerPosition")
 			return true
 		}
 		plyRow, plyCol := ConvertXYToRowCol(p.X, p.Y, 1.0)
@@ -110,14 +114,17 @@ func buildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 		row := plyRow - mobRow + (dqn.SenseRangeRow / 2)
 		if row < 0 || row >= dqn.SenseRangeRow {
 			// 索敵範囲外にいる
+			log.Infof("target is far away. row=%f", row)
 			return true
 		}
 		col := plyCol - mobCol + (dqn.SenseRangeCol / 2)
 		if col < 0 || col >= dqn.SenseRangeCol {
+			log.Infof("target is far away. col=%f", col)
 			// 索敵範囲外にいる
 			return true
 		}
 
+		log.Infof("DQN.Payload.PlayerPosition row=%f,col=%f", row, col)
 		payload.Instances[0].State[row][col][playerLayer] = 1
 		return true
 	})

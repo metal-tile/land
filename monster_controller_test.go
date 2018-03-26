@@ -31,14 +31,19 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 	}
 
 	playerPositionMap := &sync.Map{}
-
-	if err := client.UpdateMonster(l, &firedb.MonsterPosition{
+	mob := &firedb.MonsterPosition{
 		ID:    "dummy",
 		X:     950,
 		Y:     1000,
 		Angle: 180,
 		Speed: 4,
-	}, playerPositionMap); err != nil {
+	}
+	dp, err := BuildDQNPayload(l, mob, playerPositionMap)
+	if err != nil {
+		t.Fatalf("failed BuildDQNPayload. err=%+v", err)
+	}
+
+	if err := client.UpdateMonster(l, mob, dp); err != nil {
 		t.Fatalf("failed UpdateMonster. err=%+v", err)
 	}
 
@@ -48,5 +53,33 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 	}
 	if e, g := 1, msDummy.UpdatePositionCount; e != g {
 		t.Fatalf("expected MonsterStore.UpdatePositionCount is %d; gpt %d", e, g)
+	}
+}
+
+func TestBuildDQNPayload(t *testing.T) {
+	l := &slog.Log{}
+
+	playerPositionMap := &sync.Map{}
+	playerPositionMap.Store("sinmetal", &firedb.PlayerPosition{
+		ID:    "sinmetal",
+		X:     900,
+		Y:     1000,
+		Angle: 180,
+	})
+
+	mob := &firedb.MonsterPosition{
+		ID:    "dummy",
+		X:     950,
+		Y:     1000,
+		Angle: 180,
+		Speed: 4,
+	}
+	dp, err := BuildDQNPayload(l, mob, playerPositionMap)
+	if err != nil {
+		t.Fatalf("failed BuildDQNPayload. err=%+v", err)
+	}
+	// 右にプレイヤーがいるので、COLが中心より1少ない値になる
+	if e, g := 1.0, dp.Instances[0].State[dqn.SenseRangeRow/2][dqn.SenseRangeCol/2-1][1]; e != g {
+		t.Fatalf("expected v = %f; got %f", e, g)
 	}
 }
