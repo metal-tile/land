@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/sinmetal/slog"
-
+	"github.com/metal-tile/land/dqn"
 	"github.com/metal-tile/land/firedb"
+	"github.com/sinmetal/slog"
 )
 
 var playerPositionMap *sync.Map
@@ -35,8 +34,15 @@ func main() {
 		ch <- watchPlayerPositions()
 	}()
 
+	go func() {
+		c := &MonsterClient{
+			DQN: dqn.NewClient(),
+		}
+		ch <- RunControlMonster(c)
+	}()
+
 	err = <-ch
-	fmt.Println(err.Error())
+	fmt.Printf("%+v", err)
 }
 
 func watchPlayerPositions() error {
@@ -61,12 +67,12 @@ func watchPlayerPositions() error {
 				}
 
 				// debug log
-				j, err := json.Marshal(pps)
-				if err != nil {
-					log.Errorf("json.Marshal. %s", err.Error())
-					log.Flush()
-				}
-				log.Infof(string(j))
+				//j, err := json.Marshal(pps)
+				//if err != nil {
+				//	log.Errorf("json.Marshal. %s", err.Error())
+				//	log.Flush()
+				//}
+				//log.Infof(string(j))
 				log.Flush()
 			}
 		}
