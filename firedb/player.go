@@ -32,10 +32,10 @@ func SetPlayerStoreImple(s PlayerStoreImple) {
 // TODO IDをstructの中に持つか、Mapで持つようにするか悩ましい
 type PlayerPosition struct {
 	ID     string  `firestore:"-" json:"id"`
-	Angle  float64 `json:"angle"`
-	IsMove bool    `json:"isMove"`
-	X      float64 `json:"x"`
-	Y      float64 `json:"y"`
+	Angle  float64 `json:"angle" firestore:"angle"`
+	IsMove bool    `json:"isMove" firestore:"isMove"`
+	X      float64 `json:"x" firestore:"x"`
+	Y      float64 `json:"y" firestore:"y"`
 }
 
 // GetPlayerPositions is PlayerPositionをFirestoreから取得する
