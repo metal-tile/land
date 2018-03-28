@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/profiler"
 	"github.com/metal-tile/land/dqn"
 	"github.com/metal-tile/land/firedb"
 	"github.com/sinmetal/slog"
@@ -15,6 +16,10 @@ import (
 var playerPositionMap *sync.Map
 
 func main() {
+	if err := profiler.Start(profiler.Config{Service: "land", ServiceVersion: "0.0.1"}); err != nil {
+		fmt.Printf("failed stackdriver.profiler.Start %+v", err)
+	}
+
 	hs, err := os.Hostname()
 	if err != nil {
 		fmt.Printf("Fail os.Hostname. %s\n", err.Error())
