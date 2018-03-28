@@ -28,11 +28,11 @@ func SetMonsterStore(s MonsterStore) {
 // MonsterPosition is Monster Position struct
 type MonsterPosition struct {
 	ID     string  `firestore:"-" json:"id"`
-	Speed  float64 `json:"speed"`
-	Angle  float64 `json:"angle"`
-	IsMove bool    `json:"isMove"`
-	X      float64 `json:"x"`
-	Y      float64 `json:"y"`
+	Speed  float64 `json:"speed" firestore:"speed"`
+	Angle  float64 `json:"angle" firestore:"angle"`
+	IsMove bool    `json:"isMove" firestore:"isMove"`
+	X      float64 `json:"x" firestore:"x"`
+	Y      float64 `json:"y" firestore:"y"`
 }
 
 // UpdatePosition is MonsterのPositionを更新する
