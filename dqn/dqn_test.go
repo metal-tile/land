@@ -24,7 +24,7 @@ func TestSetDummyClient(t *testing.T) {
 	da := &Answer{
 		X:      -1,
 		Y:      0,
-		Paused: false,
+		IsMove: true,
 		Angle:  AngleRight,
 		Speed:  speed,
 	}
@@ -57,8 +57,8 @@ func TestSetDummyClient(t *testing.T) {
 	if e, g := da.Y, a.Y; e != g {
 		t.Fatalf("expected Y is %f; got %f", e, g)
 	}
-	if e, g := da.Paused, a.Paused; e != g {
-		t.Fatalf("expected Paused is %t; got %t", e, g)
+	if e, g := da.IsMove, a.IsMove; e != g {
+		t.Fatalf("expected IsMove is %t; got %t", e, g)
 	}
 	if e, g := da.Angle, a.Angle; e != g {
 		t.Fatalf("expected Angle is %f; got %f", e, g)

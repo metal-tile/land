@@ -82,7 +82,7 @@ func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPos
 
 	mob.X += ans.X * mob.Speed
 	mob.Y += ans.Y * mob.Speed
-	mob.IsMove = ans.Paused
+	mob.IsMove = ans.IsMove
 	mob.Angle = ans.Angle
 	monsterPositionMap.Store(mob.ID, mob)
 	return ms.UpdatePosition(ctx, mob)

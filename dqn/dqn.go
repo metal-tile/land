@@ -62,7 +62,7 @@ type Answer struct {
 	X      float64
 	Y      float64
 	Angle  float64
-	Paused bool
+	IsMove bool
 	Speed  float64
 }
 
@@ -154,7 +154,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		return &Answer{
 			X:      0,
 			Y:      0,
-			Paused: true,
+			IsMove: false,
 			Angle:  AngleDown,
 			Speed:  0,
 		}, nil
@@ -163,7 +163,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		return &Answer{
 			X:      1,
 			Y:      0,
-			Paused: false,
+			IsMove: true,
 			Angle:  AngleLeft,
 			Speed:  speed,
 		}, nil
@@ -172,7 +172,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		return &Answer{
 			X:      -1,
 			Y:      0,
-			Paused: false,
+			IsMove: true,
 			Angle:  AngleRight,
 			Speed:  speed,
 		}, nil
@@ -181,7 +181,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		return &Answer{
 			X:      0,
 			Y:      1,
-			Paused: false,
+			IsMove: true,
 			Angle:  AngleUp,
 			Speed:  speed,
 		}, nil
@@ -190,7 +190,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		return &Answer{
 			X:      0,
 			Y:      -1,
-			Paused: false,
+			IsMove: true,
 			Angle:  AngleDown,
 			Speed:  speed,
 		}, nil
