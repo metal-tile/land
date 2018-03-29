@@ -161,7 +161,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 	} else if score.Left > score.None && score.Left > score.Right && score.Left > score.Up && score.Left > score.Down {
 		// 左
 		return &Answer{
-			X:      1,
+			X:      -1,
 			Y:      0,
 			IsMove: true,
 			Angle:  AngleLeft,
@@ -170,7 +170,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 	} else if score.Right > score.None && score.Right > score.Left && score.Right > score.Up && score.Right > score.Down {
 		// 右
 		return &Answer{
-			X:      -1,
+			X:      1,
 			Y:      0,
 			IsMove: true,
 			Angle:  AngleRight,
@@ -180,7 +180,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		// 上
 		return &Answer{
 			X:      0,
-			Y:      1,
+			Y:      -1,
 			IsMove: true,
 			Angle:  AngleUp,
 			Speed:  speed,
@@ -189,7 +189,7 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		// 下
 		return &Answer{
 			X:      0,
-			Y:      -1,
+			Y:      1,
 			IsMove: true,
 			Angle:  AngleDown,
 			Speed:  speed,
