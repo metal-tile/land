@@ -14,7 +14,7 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 		DummyAnswer: &dqn.Answer{
 			X:      -1,
 			Y:      0,
-			Paused: false,
+			IsMove: true,
 			Angle:  0,
 			Speed:  4,
 		},

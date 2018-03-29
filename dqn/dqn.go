@@ -17,13 +17,13 @@ const (
 	SenseRangeCol = 8
 
 	// AngleLeft is 左向きの角度
-	AngleLeft = 180.0
+	AngleLeft = 270.0
 	// AngleRight is 右向きの角度
-	AngleRight = 0.0
+	AngleRight = 90.0
 	// AngleUp is 上向きの角度
-	AngleUp = 90.0
+	AngleUp = 0.0
 	// AngleDown is 下向きの角度
-	AngleDown = 270.0
+	AngleDown = 180.0
 
 	speed = 4.0
 )
@@ -62,7 +62,7 @@ type Answer struct {
 	X      float64
 	Y      float64
 	Angle  float64
-	Paused bool
+	IsMove bool
 	Speed  float64
 }
 
@@ -154,25 +154,25 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		return &Answer{
 			X:      0,
 			Y:      0,
-			Paused: true,
+			IsMove: false,
 			Angle:  AngleDown,
 			Speed:  0,
 		}, nil
 	} else if score.Left > score.None && score.Left > score.Right && score.Left > score.Up && score.Left > score.Down {
 		// 左
 		return &Answer{
-			X:      1,
+			X:      -1,
 			Y:      0,
-			Paused: false,
+			IsMove: true,
 			Angle:  AngleLeft,
 			Speed:  speed,
 		}, nil
 	} else if score.Right > score.None && score.Right > score.Left && score.Right > score.Up && score.Right > score.Down {
 		// 右
 		return &Answer{
-			X:      -1,
+			X:      1,
 			Y:      0,
-			Paused: false,
+			IsMove: true,
 			Angle:  AngleRight,
 			Speed:  speed,
 		}, nil
@@ -180,8 +180,8 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		// 上
 		return &Answer{
 			X:      0,
-			Y:      1,
-			Paused: false,
+			Y:      -1,
+			IsMove: true,
 			Angle:  AngleUp,
 			Speed:  speed,
 		}, nil
@@ -189,8 +189,8 @@ func buildDQNAnswer(res *apiResponse) (*Answer, error) {
 		// 下
 		return &Answer{
 			X:      0,
-			Y:      -1,
-			Paused: false,
+			Y:      1,
+			IsMove: true,
 			Angle:  AngleDown,
 			Speed:  speed,
 		}, nil
