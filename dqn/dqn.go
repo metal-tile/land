@@ -17,13 +17,13 @@ const (
 	SenseRangeCol = 8
 
 	// AngleLeft is 左向きの角度
-	AngleLeft = 180.0
+	AngleLeft = 270.0
 	// AngleRight is 右向きの角度
-	AngleRight = 0.0
+	AngleRight = 90.0
 	// AngleUp is 上向きの角度
-	AngleUp = 90.0
+	AngleUp = 0.0
 	// AngleDown is 下向きの角度
-	AngleDown = 270.0
+	AngleDown = 180.0
 
 	speed = 4.0
 )
