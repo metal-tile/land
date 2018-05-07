@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"sync"
@@ -28,6 +29,10 @@ func main() {
 	fmt.Println("")
 	fmt.Println(os.Environ())
 
+	onlyFuncActivate := flag.String("onlyFuncActivate", "", "Activate only specified function")
+	flag.Parse()
+	fmt.Printf("onlyFuncActivate is %s\n", *onlyFuncActivate)
+
 	playerPositionMap = &sync.Map{}
 
 	ctx := context.Background()
@@ -35,16 +40,30 @@ func main() {
 
 	ch := make(chan error)
 
-	go func() {
-		ch <- watchPlayerPositions()
-	}()
+	if *onlyFuncActivate == "" || *onlyFuncActivate == "field" {
+		fmt.Println("Start WatchField")
+		fieldStore := firedb.NewFieldStore()
+		go func() {
+			ch <- fieldStore.Watch(ctx, "world-default20170908-land-home")
+		}()
+	}
 
-	go func() {
-		c := &MonsterClient{
-			DQN: dqn.NewClient(),
-		}
-		ch <- RunControlMonster(c)
-	}()
+	if *onlyFuncActivate == "" || *onlyFuncActivate == "playerPosition" {
+		fmt.Println("Start WatchPlayerPositions")
+		go func() {
+			ch <- watchPlayerPositions()
+		}()
+	}
+
+	if *onlyFuncActivate == "" || *onlyFuncActivate == "monster" {
+		fmt.Println("Start Monster Control")
+		go func() {
+			c := &MonsterClient{
+				DQN: dqn.NewClient(),
+			}
+			ch <- RunControlMonster(c)
+		}()
+	}
 
 	err = <-ch
 	fmt.Printf("%+v", err)
