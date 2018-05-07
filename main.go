@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -64,6 +65,12 @@ func main() {
 			ch <- RunControlMonster(c)
 		}()
 	}
+
+	// Debug HTTP Handler
+	go func() {
+		http.HandleFunc("/", fieldHandler) // ハンドラを登録してウェブページを表示させる
+		http.ListenAndServe(":8080", nil)
+	}()
 
 	err = <-ch
 	fmt.Printf("%+v", err)
