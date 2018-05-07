@@ -41,9 +41,9 @@ func main() {
 
 	ch := make(chan error)
 
+	fieldStore := firedb.NewFieldStore()
 	if *onlyFuncActivate == "" || *onlyFuncActivate == "field" {
 		fmt.Println("Start WatchField")
-		fieldStore := firedb.NewFieldStore()
 		go func() {
 			ch <- fieldStore.Watch(ctx, "world-default20170908-land-home")
 		}()
@@ -68,7 +68,8 @@ func main() {
 
 	// Debug HTTP Handler
 	go func() {
-		http.HandleFunc("/", fieldHandler) // ハンドラを登録してウェブページを表示させる
+		http.HandleFunc("/", helthHandler)
+		http.HandleFunc("/field", fieldHandler)
 		http.ListenAndServe(":8080", nil)
 	}()
 
