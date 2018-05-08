@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -40,9 +41,9 @@ func main() {
 
 	ch := make(chan error)
 
+	fieldStore := firedb.NewFieldStore()
 	if *onlyFuncActivate == "" || *onlyFuncActivate == "field" {
 		fmt.Println("Start WatchField")
-		fieldStore := firedb.NewFieldStore()
 		go func() {
 			ch <- fieldStore.Watch(ctx, "world-default20170908-land-home")
 		}()
@@ -64,6 +65,14 @@ func main() {
 			ch <- RunControlMonster(c)
 		}()
 	}
+
+	// Debug HTTP Handler
+	go func() {
+		http.HandleFunc("/", helthHandler)
+		http.HandleFunc("/field", fieldHandler)
+		http.HandleFunc("/healthz", helthHandler)
+		http.ListenAndServe(":8080", nil)
+	}()
 
 	err = <-ch
 	fmt.Printf("%+v", err)
