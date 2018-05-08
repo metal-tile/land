@@ -70,6 +70,7 @@ func main() {
 	go func() {
 		http.HandleFunc("/", helthHandler)
 		http.HandleFunc("/field", fieldHandler)
+		http.HandleFunc("/healthz", helthHandler)
 		http.ListenAndServe(":8080", nil)
 	}()
 
