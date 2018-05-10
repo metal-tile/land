@@ -20,6 +20,7 @@ func init() {
 // MonsterClient is Monsterに関連する処理を行うClient
 type MonsterClient struct {
 	DQN dqn.Client
+	firedb.PlayerStore
 }
 
 // RunControlMonster is MonsterのControlを開始する
@@ -52,9 +53,9 @@ func RunControlMonster(client *MonsterClient) error {
 					log.Infof("%s is not cast monsterPositionMap.", monsterID)
 					continue
 				}
-				dp, err := BuildDQNPayload(&log, mob, playerPositionMap)
+				dp, err := BuildDQNPayload(&log, mob, client.PlayerStore.GetPositionMap())
 				if err != nil {
-					log.Infof("failed BuildDQNPayload. %+v,%+v,%+v", mob, playerPositionMap, err)
+					log.Infof("failed BuildDQNPayload. %+v,%+v,%+v", mob, client.PlayerStore.GetPositionMap(), err)
 					continue
 				}
 				err = client.UpdateMonster(&log, mob, dp)
