@@ -2,30 +2,38 @@ package firedb
 
 import (
 	"context"
+	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // PlayerStore is PlayerStore
 type PlayerStore interface {
-	GetPlayerPositions(ctx context.Context) ([]*PlayerPosition, error)
+	Watch(ctx context.Context, path string) error
+	GetPosition(id string) *PlayerPosition
+	GetPositionMap() *sync.Map
 }
 
-// PlayerStoreImple is PlayerStoreImple
-type PlayerStoreImple struct{}
+// defaultPlayerStore is Default PlayerStore Functions
+type defaultPlayerStore struct {
+	positionMap *sync.Map
+}
 
-var playerStore *PlayerStoreImple
+var playerStore PlayerStore
 
 // NewPlayerStore is NewPlayerStore
 func NewPlayerStore() PlayerStore {
-	if playerStore != nil {
-		return playerStore
+	if playerStore == nil {
+		playerStore = &defaultPlayerStore{
+			positionMap: &sync.Map{},
+		}
 	}
-	s := PlayerStoreImple{}
-	return &s
+	return playerStore
 }
 
-// SetPlayerStoreImple is 実装を差し替えたいときに利用する
-func SetPlayerStoreImple(s PlayerStoreImple) {
-	playerStore = &s
+// SetPlayerStore is 実装を差し替えたいときに利用する
+func SetPlayerStore(s PlayerStore) {
+	playerStore = s
 }
 
 // PlayerPosition is Player Position Struct
@@ -38,23 +46,40 @@ type PlayerPosition struct {
 	Y      float64 `json:"y" firestore:"y"`
 }
 
-// GetPlayerPositions is PlayerPositionをFirestoreから取得する
-func (s *PlayerStoreImple) GetPlayerPositions(ctx context.Context) ([]*PlayerPosition, error) {
-	ds, err := db.Collection("world-default-player-position").Documents(ctx).GetAll()
-	if err != nil {
-		return nil, err
-	}
-
-	var pps []*PlayerPosition
-	for _, v := range ds {
-		var pp PlayerPosition
-		pp.ID = v.Ref.ID
-		err := v.DataTo(&pp)
+// Watch is PlayerPosition Sync Firestore
+func (s *defaultPlayerStore) Watch(ctx context.Context, path string) error {
+	iter := db.Collection(path).Snapshots(ctx)
+	defer iter.Stop()
+	for {
+		dociter, err := iter.Next()
 		if err != nil {
-			return nil, err
+			return errors.WithStack(err)
 		}
-		pps = append(pps, &pp)
+		dslist, err := dociter.GetAll()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		for _, v := range dslist {
+			var pp PlayerPosition
+			pp.ID = v.Ref.ID
+			err := v.DataTo(&pp)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			s.positionMap.Store(pp.ID, &pp)
+		}
 	}
+}
 
-	return pps, nil
+func (s *defaultPlayerStore) GetPositionMap() *sync.Map {
+	return s.positionMap
+}
+
+// GetPosition is 指定したIDのプレイヤーのポジションを取得
+func (s *defaultPlayerStore) GetPosition(id string) *PlayerPosition {
+	pp, ok := s.positionMap.Load(id)
+	if ok == false {
+		return nil
+	}
+	return pp.(*PlayerPosition)
 }
