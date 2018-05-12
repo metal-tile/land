@@ -1,0 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: land-debug-ingress
+  annotations:
+      kubernetes.io/ingress.global-static-ip-name: "land-debug-ingress"
+      kubernetes.io/ingress.class: "gce"
+      kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+    - secretName: land-debug-ingress-tls
+      hosts:
+        - land-debug.metal-tile.jp
+  rules:
+    - host: land-debug.metal-tile.jp
+      http:
+        paths:
+        - path: /*
+          backend:
+            serviceName: land-service
+            servicePort: 8080
