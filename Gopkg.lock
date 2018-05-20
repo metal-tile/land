@@ -2,6 +2,7 @@
 
 
 [[projects]]
+  branch = "master"
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
@@ -13,8 +14,7 @@
     "internal/version",
     "profiler"
   ]
-  revision = "29f476ffa9c4cd4fd14336b6043090ac1ad76733"
-  version = "v0.21.0"
+  revision = "90f2606161ee6a14efe2ca79fc05ac2b8efe250b"
 
 [[projects]]
   name = "github.com/golang/protobuf"
@@ -55,6 +55,12 @@
   name = "github.com/sinmetal/slog"
   packages = ["."]
   revision = "aeab4f7aac51d03283d936409e98334b31930858"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sinmetal/stime"
+  packages = ["."]
+  revision = "dc3f56a86d3cb1c5a6b98e5d174253c4fdb503ec"
 
 [[projects]]
   name = "go.opencensus.io"
@@ -205,6 +211,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fa147e0b26bdb1aaae95c7d14aeeaa2e7787d6c6760735cda8db263a7b485345"
+  inputs-digest = "bbce22ccc6afef33d70e07850d419b200b67e4ce0fd8aa60f0ca86af5fa3683b"
   solver-name = "gps-cdcl"
   solver-version = 1
