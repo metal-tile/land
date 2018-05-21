@@ -21,6 +21,19 @@ func Now() time.Time {
 	return t
 }
 
+// InTime is targetが現在時刻から、指定時間と比べて、時間内に収まっているのかを判定する
+func InTime(now time.Time, target time.Time, duration time.Duration) bool {
+	t := target.Add(duration)
+	if now.Equal(t) {
+		return true
+	}
+	if now.Before(t) {
+		return true
+	}
+
+	return false
+}
+
 // AddDummyTime is UnitTest用のNowが返す時刻を追加する
 // SetPermafrost と同時に利用した場合、Permafrostが優先される
 func AddDummyTime(t ...time.Time) {
