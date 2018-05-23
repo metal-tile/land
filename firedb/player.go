@@ -55,11 +55,12 @@ type User struct {
 // PlayerPosition is Player Position Struct
 // TODO IDをstructの中に持つか、Mapで持つようにするか悩ましい
 type PlayerPosition struct {
-	ID     string  `firestore:"-" json:"id"`
-	Angle  float64 `json:"angle" firestore:"angle"`
-	IsMove bool    `json:"isMove" firestore:"isMove"`
-	X      float64 `json:"x" firestore:"x"`
-	Y      float64 `json:"y" firestore:"y"`
+	ID                string    `firestore:"-" json:"id"`
+	Angle             float64   `json:"angle" firestore:"angle"`
+	IsMove            bool      `json:"isMove" firestore:"isMove"`
+	X                 float64   `json:"x" firestore:"x"`
+	Y                 float64   `json:"y" firestore:"y"`
+	FirestoreUpdateAt time.Time `firestore:"-"` // FirestoreのUpdateTime
 }
 
 // Watch is PlayerPosition Sync Firestore
@@ -76,16 +77,26 @@ func (s *defaultPlayerStore) Watch(ctx context.Context, path string) error {
 			return errors.WithStack(err)
 		}
 		for _, v := range dslist {
+			// ReadTimeはアプリケーションが読み込んだ時間、 UpdateTimeはそのデータがFirestoreで読み込んだ時間のようだ
+			if stime.InTime(stime.Now(), v.UpdateTime, 10*time.Second) == false {
+				// 対象のデータが古い場合は、スルーする
+				continue
+			}
+
 			var pp PlayerPosition
 			pp.ID = v.Ref.ID
 			err := v.DataTo(&pp)
 			if err != nil {
 				return errors.WithStack(err)
 			}
+			pp.FirestoreUpdateAt = v.UpdateTime
 			s.positionMap.Store(pp.ID, &pp)
 
-			if isChangeActiveStatus(s.playerMap, pp.ID) == false {
-				s.SetActiveUser(ctx, pp.ID)
+			if isChangeActiveStatus(s.playerMap, pp.ID) {
+				fmt.Printf("%s is Active\n", pp.ID)
+				if err := s.SetActiveUser(ctx, pp.ID); err != nil {
+					return errors.WithStack(err)
+				}
 			}
 		}
 	}

@@ -62,6 +62,7 @@ func main() {
 	}
 
 	if *onlyFuncActivate == "" || *onlyFuncActivate == "watchPassivePlayer" {
+		fmt.Println("Start WatchPassivePlayer")
 		go func() {
 			ch <- WatchPassivePlayer()
 		}()
