@@ -26,6 +26,11 @@ const (
 	AngleDown = 180.0
 
 	speed = 4.0
+
+	// MonsterLayer is DQN PayloadのMonsterの座標の添字
+	MonsterLayer = 0
+	// PlayerLayer is DQN PayloadのPlayerの座標の添字
+	PlayerLayer = 1
 )
 
 // ErrDQNAPIResponse is DQN ServerからのError時に利用する

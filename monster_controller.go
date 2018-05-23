@@ -9,6 +9,7 @@ import (
 	"github.com/metal-tile/land/firedb"
 	"github.com/pkg/errors"
 	"github.com/sinmetal/slog"
+	"github.com/sinmetal/stime"
 )
 
 var monsterPositionMap *sync.Map
@@ -91,16 +92,13 @@ func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPos
 
 // BuildDQNPayload is DQNに渡すPayloadを構築する
 func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMap *sync.Map) (*dqn.Payload, error) {
-	const dqnLayer = 0
-	const playerLayer = 1
-
 	payload := &dqn.Payload{
 		Instances: []dqn.Instance{
 			dqn.Instance{},
 		},
 	}
 	// Monsterが中心ぐらいにいる状態
-	payload.Instances[0].State[(dqn.SenseRangeRow / 2)][(dqn.SenseRangeCol / 2)][dqnLayer] = 1
+	payload.Instances[0].State[(dqn.SenseRangeRow / 2)][(dqn.SenseRangeCol / 2)][dqn.MonsterLayer] = 1
 
 	mobRow, mobCol := ConvertXYToRowCol(mp.X, mp.Y, 1.0)
 	log.Info("Start playerPositionMap.Range.")
@@ -108,6 +106,9 @@ func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 		p, ok := value.(*firedb.PlayerPosition)
 		if !ok {
 			log.Infof("failed cast firedb.PlayerPosition")
+			return true
+		}
+		if stime.InTime(stime.Now(), p.FirestoreUpdateAt, 10*time.Second) == false {
 			return true
 		}
 		plyRow, plyCol := ConvertXYToRowCol(p.X, p.Y, 1.0)
@@ -126,7 +127,7 @@ func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 		}
 
 		log.Infof("DQN.Payload.PlayerPosition row=%f,col=%f", row, col)
-		payload.Instances[0].State[row][col][playerLayer] = 1
+		payload.Instances[0].State[row][col][dqn.PlayerLayer] = 1
 		return true
 	})
 
