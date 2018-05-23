@@ -172,6 +172,16 @@ func (s *defaultPlayerStore) UpdateActiveUser(ctx context.Context, id string, ac
 	return nil
 }
 
+// ExistsActivePlayer is Activeなプレイヤーが存在するかどうかを返す
+func ExistsActivePlayer(playerMap map[string]*User) bool {
+	for _, v := range playerMap {
+		if v.Active {
+			return true
+		}
+	}
+	return false
+}
+
 func isChangeActiveStatus(playerMap map[string]*User, id string) bool {
 	u, ok := playerMap[id]
 	if !ok {

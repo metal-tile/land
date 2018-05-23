@@ -28,6 +28,32 @@ func (s *dummyPlayerStore) UpdateActiveUser(ctx context.Context, id string, acti
 	return nil
 }
 
+func TestExistsActivePlayer(t *testing.T) {
+	candidates := []struct {
+		playerMap map[string]*User
+		expected  bool
+	}{
+		{
+			playerMap: map[string]*User{},
+			expected:  false,
+		},
+		{
+			playerMap: map[string]*User{"hogeUserID2": &User{Active: false, UpdatedAt: time.Now()}},
+			expected:  false,
+		},
+		{
+			playerMap: map[string]*User{"hogeUserID2": &User{Active: true, UpdatedAt: time.Now()}},
+			expected:  true,
+		},
+	}
+
+	for i, v := range candidates {
+		if e, g := v.expected, ExistsActivePlayer(v.playerMap); e != g {
+			t.Fatalf("%d : expected %t; got %t", i, e, g)
+		}
+	}
+}
+
 func TestIsChangeActiveStatus(t *testing.T) {
 	candidates := []struct {
 		id        string

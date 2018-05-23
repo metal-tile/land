@@ -43,6 +43,10 @@ func RunControlMonster(client *MonsterClient) error {
 			case <-t.C:
 				log := slog.Start(time.Now())
 
+				if firedb.ExistsActivePlayer(client.PlayerStore.GetPlayerMap()) == false {
+					continue
+				}
+
 				// TODO getMonsterPosition()があったほうがいいかもしれない
 				v, ok := monsterPositionMap.Load(monsterID)
 				if !ok {
