@@ -7,6 +7,7 @@ import (
 	"github.com/metal-tile/land/dqn"
 	"github.com/metal-tile/land/firedb"
 	"github.com/sinmetal/slog"
+	"github.com/sinmetal/stime"
 )
 
 func TestMonsterClient_UpdateMonster(t *testing.T) {
@@ -59,27 +60,75 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 func TestBuildDQNPayload(t *testing.T) {
 	l := &slog.Log{}
 
-	playerPositionMap := &sync.Map{}
-	playerPositionMap.Store("sinmetal", &firedb.PlayerPosition{
+	candidates := []struct {
+		playerPositionMap *sync.Map
+		monsterPosition   *firedb.MonsterPosition
+		row               int
+		col               int
+		target            float64
+		targetNothing     bool
+	}{
+		{
+			playerPositionMap: &sync.Map{},
+			monsterPosition: &firedb.MonsterPosition{
+				ID:    "dummy",
+				X:     950,
+				Y:     1000,
+				Angle: 180,
+				Speed: 4,
+			},
+			row:    0,
+			col:    -1,
+			target: 1.0, // 右にプレイヤーがいるので、COLが中心より1少ない値になる
+		},
+		{
+			playerPositionMap: &sync.Map{},
+			monsterPosition: &firedb.MonsterPosition{
+				ID:    "dummy",
+				X:     950,
+				Y:     1000,
+				Angle: 180,
+				Speed: 4,
+			},
+			row:           0,
+			col:           0,
+			target:        0.0,
+			targetNothing: true, // プレイヤーがいないので、動かない
+		},
+	}
+	candidates[0].playerPositionMap.Store("sinmetal", &firedb.PlayerPosition{
+		ID:                "sinmetal",
+		X:                 900,
+		Y:                 1000,
+		Angle:             180,
+		FirestoreUpdateAt: stime.Now(),
+	})
+
+	// FirestoreUpdateAt が古いので無視されるプレイヤー
+	candidates[1].playerPositionMap.Store("sinmetal", &firedb.PlayerPosition{
 		ID:    "sinmetal",
 		X:     900,
 		Y:     1000,
 		Angle: 180,
 	})
 
-	mob := &firedb.MonsterPosition{
-		ID:    "dummy",
-		X:     950,
-		Y:     1000,
-		Angle: 180,
-		Speed: 4,
-	}
-	dp, err := BuildDQNPayload(l, mob, playerPositionMap)
-	if err != nil {
-		t.Fatalf("failed BuildDQNPayload. err=%+v", err)
-	}
-	// 右にプレイヤーがいるので、COLが中心より1少ない値になる
-	if e, g := 1.0, dp.Instances[0].State[dqn.SenseRangeRow/2][dqn.SenseRangeCol/2-1][1]; e != g {
-		t.Fatalf("expected v = %f; got %f", e, g)
+	for i, v := range candidates {
+		dp, err := BuildDQNPayload(l, v.monsterPosition, v.playerPositionMap)
+		if err != nil {
+			t.Fatalf("failed BuildDQNPayload. err=%+v", err)
+		}
+		if e, g := v.target, dp.Instances[0].State[dqn.SenseRangeRow/2+v.row][dqn.SenseRangeCol/2+v.col][dqn.PlayerLayer]; e != g {
+			t.Fatalf("%d : expected v = %f; got %f", i, e, g)
+		}
+
+		if v.targetNothing {
+			for row := 0; row < dqn.SenseRangeRow; row++ {
+				for col := 0; col < dqn.SenseRangeCol; col++ {
+					if e, g := 0.0, dp.Instances[0].State[row][col][dqn.PlayerLayer]; e != g {
+						t.Fatalf("%d : expected [%d][%d] = %f; got %f", i, row, col, e, g)
+					}
+				}
+			}
+		}
 	}
 }

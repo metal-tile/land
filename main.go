@@ -61,6 +61,13 @@ func main() {
 		}()
 	}
 
+	if *onlyFuncActivate == "" || *onlyFuncActivate == "watchPassivePlayer" {
+		fmt.Println("Start WatchPassivePlayer")
+		go func() {
+			ch <- WatchPassivePlayer()
+		}()
+	}
+
 	// Debug HTTP Handler
 	go func() {
 		http.HandleFunc("/", helthHandler)
