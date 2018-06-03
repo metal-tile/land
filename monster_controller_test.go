@@ -1,7 +1,6 @@
 package main
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/metal-tile/land/dqn"
@@ -31,7 +30,7 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 		DQN: d,
 	}
 
-	playerPositionMap := &sync.Map{}
+	playerPositionMap := make(map[string]*firedb.PlayerPosition)
 	mob := &firedb.MonsterPosition{
 		ID:    "dummy",
 		X:     950,
@@ -61,7 +60,7 @@ func TestBuildDQNPayload(t *testing.T) {
 	l := &slog.Log{}
 
 	candidates := []struct {
-		playerPositionMap *sync.Map
+		playerPositionMap map[string]*firedb.PlayerPosition
 		monsterPosition   *firedb.MonsterPosition
 		row               int
 		col               int
@@ -69,7 +68,7 @@ func TestBuildDQNPayload(t *testing.T) {
 		targetNothing     bool
 	}{
 		{
-			playerPositionMap: &sync.Map{},
+			playerPositionMap: make(map[string]*firedb.PlayerPosition),
 			monsterPosition: &firedb.MonsterPosition{
 				ID:    "dummy",
 				X:     950,
@@ -82,7 +81,7 @@ func TestBuildDQNPayload(t *testing.T) {
 			target: 1.0, // 右にプレイヤーがいるので、COLが中心より1少ない値になる
 		},
 		{
-			playerPositionMap: &sync.Map{},
+			playerPositionMap: make(map[string]*firedb.PlayerPosition),
 			monsterPosition: &firedb.MonsterPosition{
 				ID:    "dummy",
 				X:     950,
@@ -96,21 +95,21 @@ func TestBuildDQNPayload(t *testing.T) {
 			targetNothing: true, // プレイヤーがいないので、動かない
 		},
 	}
-	candidates[0].playerPositionMap.Store("sinmetal", &firedb.PlayerPosition{
+	candidates[0].playerPositionMap["sinmetal"] = &firedb.PlayerPosition{
 		ID:                "sinmetal",
 		X:                 900,
 		Y:                 1000,
 		Angle:             180,
 		FirestoreUpdateAt: stime.Now(),
-	})
+	}
 
 	// FirestoreUpdateAt が古いので無視されるプレイヤー
-	candidates[1].playerPositionMap.Store("sinmetal", &firedb.PlayerPosition{
+	candidates[1].playerPositionMap["sinmetal"] = &firedb.PlayerPosition{
 		ID:    "sinmetal",
 		X:     900,
 		Y:     1000,
 		Angle: 180,
-	})
+	}
 
 	for i, v := range candidates {
 		dp, err := BuildDQNPayload(l, v.monsterPosition, v.playerPositionMap)

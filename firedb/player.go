@@ -3,7 +3,6 @@ package firedb
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -16,7 +15,7 @@ type PlayerStore interface {
 	Watch(ctx context.Context, path string) error
 	GetPosition(id string) *PlayerPosition
 	GetPlayerMap() map[string]*User
-	GetPositionMap() *sync.Map
+	GetPositionMap() map[string]*PlayerPosition
 	SetPassiveUser(ctx context.Context, id string) error
 	UpdateActiveUser(ctx context.Context, id string, active bool) error
 }
@@ -24,7 +23,7 @@ type PlayerStore interface {
 // defaultPlayerStore is Default PlayerStore Functions
 type defaultPlayerStore struct {
 	playerMap   map[string]*User
-	positionMap *sync.Map
+	positionMap map[string]*PlayerPosition
 }
 
 var playerStore PlayerStore
@@ -34,7 +33,7 @@ func NewPlayerStore() PlayerStore {
 	if playerStore == nil {
 		playerStore = &defaultPlayerStore{
 			playerMap:   make(map[string]*User),
-			positionMap: &sync.Map{},
+			positionMap: make(map[string]*PlayerPosition),
 		}
 	}
 	return playerStore
@@ -90,7 +89,7 @@ func (s *defaultPlayerStore) Watch(ctx context.Context, path string) error {
 				return errors.WithStack(err)
 			}
 			pp.FirestoreUpdateAt = v.UpdateTime
-			s.positionMap.Store(pp.ID, &pp)
+			s.positionMap[pp.ID] = &pp
 
 			if isChangeActiveStatus(s.playerMap, pp.ID) {
 				fmt.Printf("%s is Active\n", pp.ID)
@@ -106,17 +105,17 @@ func (s *defaultPlayerStore) GetPlayerMap() map[string]*User {
 	return s.playerMap
 }
 
-func (s *defaultPlayerStore) GetPositionMap() *sync.Map {
+func (s *defaultPlayerStore) GetPositionMap() map[string]*PlayerPosition {
 	return s.positionMap
 }
 
 // GetPosition is 指定したIDのプレイヤーのポジションを取得
 func (s *defaultPlayerStore) GetPosition(id string) *PlayerPosition {
-	pp, ok := s.positionMap.Load(id)
+	pp, ok := s.positionMap[id]
 	if ok == false {
 		return nil
 	}
-	return pp.(*PlayerPosition)
+	return pp
 }
 
 // SetActiveUser is 移動しているなどアクティブであることが計測されたユーザの状態を更新する
