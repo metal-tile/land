@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/metal-tile/land/dqn"
@@ -12,10 +11,10 @@ import (
 	"github.com/sinmetal/stime"
 )
 
-var monsterPositionMap *sync.Map
+var monsterPositionMap map[string]*firedb.MonsterPosition
 
 func init() {
-	monsterPositionMap = &sync.Map{}
+	monsterPositionMap = make(map[string]*firedb.MonsterPosition)
 }
 
 // MonsterClient is Monsterに関連する処理を行うClient
@@ -28,13 +27,13 @@ type MonsterClient struct {
 func RunControlMonster(client *MonsterClient) error {
 	// TODO dummy monsterをdebugのために追加する
 	const monsterID = "dummy"
-	monsterPositionMap.Store(monsterID, &firedb.MonsterPosition{
+	monsterPositionMap[monsterID] = &firedb.MonsterPosition{
 		ID:    monsterID,
 		X:     950,
 		Y:     1000,
 		Angle: 180,
 		Speed: 4,
-	})
+	}
 
 	for {
 		t := time.NewTicker(100 * time.Millisecond)
@@ -47,15 +46,9 @@ func RunControlMonster(client *MonsterClient) error {
 					continue
 				}
 
-				// TODO getMonsterPosition()があったほうがいいかもしれない
-				v, ok := monsterPositionMap.Load(monsterID)
+				mob, ok := monsterPositionMap[monsterID]
 				if !ok {
 					log.Infof("%s is not found monsterPositionMap.", monsterID)
-					continue
-				}
-				mob, ok := v.(*firedb.MonsterPosition)
-				if !ok {
-					log.Infof("%s is not cast monsterPositionMap.", monsterID)
 					continue
 				}
 				dp, err := BuildDQNPayload(&log, mob, client.PlayerStore.GetPositionMap())
@@ -90,12 +83,12 @@ func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPos
 	mob.Y += ans.Y * mob.Speed
 	mob.IsMove = ans.IsMove
 	mob.Angle = ans.Angle
-	monsterPositionMap.Store(mob.ID, mob)
+	monsterPositionMap[mob.ID] = mob
 	return ms.UpdatePosition(ctx, mob)
 }
 
 // BuildDQNPayload is DQNに渡すPayloadを構築する
-func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMap *sync.Map) (*dqn.Payload, error) {
+func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMap map[string]*firedb.PlayerPosition) (*dqn.Payload, error) {
 	payload := &dqn.Payload{
 		Instances: []dqn.Instance{
 			dqn.Instance{},
@@ -106,14 +99,9 @@ func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 
 	mobRow, mobCol := ConvertXYToRowCol(mp.X, mp.Y, 1.0)
 	log.Info("Start playerPositionMap.Range.")
-	playerPositionMap.Range(func(key, value interface{}) bool {
-		p, ok := value.(*firedb.PlayerPosition)
-		if !ok {
-			log.Infof("failed cast firedb.PlayerPosition")
-			return true
-		}
+	for _, p := range playerPositionMap {
 		if stime.InTime(stime.Now(), p.FirestoreUpdateAt, 10*time.Second) == false {
-			return true
+			continue
 		}
 		plyRow, plyCol := ConvertXYToRowCol(p.X, p.Y, 1.0)
 
@@ -121,19 +109,18 @@ func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 		if row < 0 || row >= dqn.SenseRangeRow {
 			// 索敵範囲外にいる
 			log.Infof("target is far away. row=%f", row)
-			return true
+			continue
 		}
 		col := plyCol - mobCol + (dqn.SenseRangeCol / 2)
 		if col < 0 || col >= dqn.SenseRangeCol {
 			log.Infof("target is far away. col=%f", col)
 			// 索敵範囲外にいる
-			return true
+			continue
 		}
 
 		log.Infof("DQN.Payload.PlayerPosition row=%f,col=%f", row, col)
 		payload.Instances[0].State[row][col][dqn.PlayerLayer] = 1
-		return true
-	})
+	}
 
 	return payload, nil
 }
