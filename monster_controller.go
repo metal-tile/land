@@ -12,10 +12,10 @@ import (
 	"github.com/sinmetal/stime"
 )
 
-var monsterPositionMap *sync.Map
+var monsterPositionMap map[string]*firedb.MonsterPosition
 
 func init() {
-	monsterPositionMap = &sync.Map{}
+	monsterPositionMap = make(map[string]*firedb.MonsterPosition)
 }
 
 // MonsterClient is Monsterに関連する処理を行うClient
@@ -28,13 +28,13 @@ type MonsterClient struct {
 func RunControlMonster(client *MonsterClient) error {
 	// TODO dummy monsterをdebugのために追加する
 	const monsterID = "dummy"
-	monsterPositionMap.Store(monsterID, &firedb.MonsterPosition{
+	monsterPositionMap[monsterID] = &firedb.MonsterPosition{
 		ID:    monsterID,
 		X:     950,
 		Y:     1000,
 		Angle: 180,
 		Speed: 4,
-	})
+	}
 
 	for {
 		t := time.NewTicker(100 * time.Millisecond)
@@ -47,15 +47,9 @@ func RunControlMonster(client *MonsterClient) error {
 					continue
 				}
 
-				// TODO getMonsterPosition()があったほうがいいかもしれない
-				v, ok := monsterPositionMap.Load(monsterID)
+				mob, ok := monsterPositionMap[monsterID]
 				if !ok {
 					log.Infof("%s is not found monsterPositionMap.", monsterID)
-					continue
-				}
-				mob, ok := v.(*firedb.MonsterPosition)
-				if !ok {
-					log.Infof("%s is not cast monsterPositionMap.", monsterID)
 					continue
 				}
 				dp, err := BuildDQNPayload(&log, mob, client.PlayerStore.GetPositionMap())
@@ -90,7 +84,7 @@ func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPos
 	mob.Y += ans.Y * mob.Speed
 	mob.IsMove = ans.IsMove
 	mob.Angle = ans.Angle
-	monsterPositionMap.Store(mob.ID, mob)
+	monsterPositionMap[mob.ID] = mob
 	return ms.UpdatePosition(ctx, mob)
 }
 
