@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/metal-tile/land/dqn"
@@ -9,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sinmetal/slog"
 	"github.com/sinmetal/stime"
+	"github.com/tenntenn/sync/recoverable"
 )
 
 var monsterPositionMap map[string]*firedb.MonsterPosition
@@ -40,43 +42,60 @@ func RunControlMonster(client *MonsterClient) error {
 		for {
 			select {
 			case <-t.C:
-				log := slog.Start(time.Now())
+				ctx := slog.WithLog(context.Background())
 
-				if firedb.ExistsActivePlayer(client.PlayerStore.GetPlayerMap()) == false {
-					continue
-				}
-
-				mob, ok := monsterPositionMap[monsterID]
-				if !ok {
-					log.Infof("%s is not found monsterPositionMap.", monsterID)
-					continue
-				}
-				dp, err := BuildDQNPayload(&log, mob, client.PlayerStore.GetPositionMap())
-				if err != nil {
-					log.Infof("failed BuildDQNPayload. %+v,%+v,%+v", mob, client.PlayerStore.GetPositionMap(), err)
-					continue
-				}
-				err = client.UpdateMonster(&log, mob, dp)
-				if err != nil {
-					log.Errorf("failed UpdateMonster. %+v", err)
+				f := recoverable.Func(func() {
+					if err := handleMonster(ctx, client, monsterID); err != nil {
+						panic(err) // TODO どうしようかな？
+					}
+				})
+				if err := f(); err != nil {
+					v, ok := recoverable.RecoveredValue(err)
+					if ok {
+						panic(v)
+					}
+					slog.Info(ctx, "FailedHandleMonster", fmt.Sprintf("%+v", err))
 				}
 
-				log.Flush()
+				slog.Flush(ctx)
 			}
 		}
 	}
 }
 
-// UpdateMonster is DQN Predictionに基づき、Firestore上のMonsterの位置を更新する
-func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPosition, dp *dqn.Payload) error {
-	ans, err := client.DQN.Prediction(log, dp)
+func handleMonster(ctx context.Context, client *MonsterClient, monsterID string) error {
+	if firedb.ExistsActivePlayer(client.PlayerStore.GetPlayerMap()) == false {
+		return nil
+	}
+
+	mob, ok := monsterPositionMap[monsterID]
+	if !ok {
+		slog.Info(ctx, "NotFoundMonster", fmt.Sprintf("%s is not found monsterPositionMap.", monsterID))
+		return nil
+	}
+	dp, err := BuildDQNPayload(ctx, mob, client.PlayerStore.GetPositionMap())
 	if err != nil {
-		log.Infof("DQN.Payload %#v", dp)
+		slog.Info(ctx, "FailedBuildDQNPayload", fmt.Sprintf("failed BuildDQNPayload. %+v,%+v,%+v", mob, client.PlayerStore.GetPositionMap(), err)) // TODO LogLevelを変えるか？
+		return nil
+	}
+	err = client.UpdateMonster(ctx, mob, dp)
+	if err != nil {
+		slog.Info(ctx, "FailedUpdateMonster", fmt.Sprintf("failed UpdateMonster. %+v", err)) // TODO LogLevelを変えるか？
+		return nil
+	}
+
+	return nil
+}
+
+// UpdateMonster is DQN Predictionに基づき、Firestore上のMonsterの位置を更新する
+func (client *MonsterClient) UpdateMonster(ctx context.Context, mob *firedb.MonsterPosition, dp *dqn.Payload) error {
+	ans, err := client.DQN.Prediction(ctx, dp)
+	if err != nil {
+		slog.Info(ctx, "DQNPayload", slog.KV{"DQNPayload", dp})
 		return errors.Wrap(err, "failed DQN.Prediction")
 	}
-	log.Infof("DQNAnswer:%+v", ans)
+	slog.Info(ctx, "DQNAnswer", slog.KV{"DQNAnswer", ans})
 
-	ctx := context.Background()
 	ms := firedb.NewMonsterStore()
 
 	mob.X += ans.X * mob.Speed
@@ -88,7 +107,7 @@ func (client *MonsterClient) UpdateMonster(log *slog.Log, mob *firedb.MonsterPos
 }
 
 // BuildDQNPayload is DQNに渡すPayloadを構築する
-func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMap map[string]*firedb.PlayerPosition) (*dqn.Payload, error) {
+func BuildDQNPayload(ctx context.Context, mp *firedb.MonsterPosition, playerPositionMap map[string]*firedb.PlayerPosition) (*dqn.Payload, error) {
 	payload := &dqn.Payload{
 		Instances: []dqn.Instance{
 			dqn.Instance{},
@@ -98,7 +117,7 @@ func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 	payload.Instances[0].State[(dqn.SenseRangeRow / 2)][(dqn.SenseRangeCol / 2)][dqn.MonsterLayer] = 1
 
 	mobRow, mobCol := ConvertXYToRowCol(mp.X, mp.Y, 1.0)
-	log.Info("Start playerPositionMap.Range.")
+	slog.Info(ctx, "StartPlayerPositionMapRange", "Start playerPositionMap.Range.")
 	for _, p := range playerPositionMap {
 		if stime.InTime(stime.Now(), p.FirestoreUpdateAt, 10*time.Second) == false {
 			continue
@@ -108,17 +127,17 @@ func BuildDQNPayload(log *slog.Log, mp *firedb.MonsterPosition, playerPositionMa
 		row := plyRow - mobRow + (dqn.SenseRangeRow / 2)
 		if row < 0 || row >= dqn.SenseRangeRow {
 			// 索敵範囲外にいる
-			log.Infof("target is far away. row=%f", row)
+			slog.Info(ctx, "DQN.TargetIsFarAway", slog.KV{"row", row})
 			continue
 		}
 		col := plyCol - mobCol + (dqn.SenseRangeCol / 2)
 		if col < 0 || col >= dqn.SenseRangeCol {
-			log.Infof("target is far away. col=%f", col)
+			slog.Info(ctx, "DQN.TargetIsFarAway", slog.KV{"col", col})
 			// 索敵範囲外にいる
 			continue
 		}
 
-		log.Infof("DQN.Payload.PlayerPosition row=%f,col=%f", row, col)
+		slog.Info(ctx, "DQNPayloadPlayerPosition", fmt.Sprintf("DQN.Payload.PlayerPosition row=%d,col=%d", row, col))
 		payload.Instances[0].State[row][col][dqn.PlayerLayer] = 1
 	}
 

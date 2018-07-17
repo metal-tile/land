@@ -8,14 +8,21 @@ import (
 	"os"
 
 	"cloud.google.com/go/profiler"
+	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/metal-tile/land/dqn"
 	"github.com/metal-tile/land/firedb"
+	"go.opencensus.io/trace"
 )
 
 func main() {
 	if err := profiler.Start(profiler.Config{Service: "land", ServiceVersion: "0.0.1"}); err != nil {
 		fmt.Printf("failed stackdriver.profiler.Start %+v", err)
 	}
+	exporter, err := stackdriver.NewExporter(stackdriver.Options{})
+	if err != nil {
+		panic(err)
+	}
+	trace.RegisterExporter(exporter)
 
 	hs, err := os.Hostname()
 	if err != nil {

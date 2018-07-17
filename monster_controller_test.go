@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/metal-tile/land/dqn"
@@ -25,7 +26,7 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 	firedb.SetMonsterStore(msDummy)
 
 	d := dqn.NewClient()
-	l := &slog.Log{}
+	ctx := slog.WithLog(context.Background())
 	client := MonsterClient{
 		DQN: d,
 	}
@@ -38,12 +39,12 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 		Angle: 180,
 		Speed: 4,
 	}
-	dp, err := BuildDQNPayload(l, mob, playerPositionMap)
+	dp, err := BuildDQNPayload(ctx, mob, playerPositionMap)
 	if err != nil {
 		t.Fatalf("failed BuildDQNPayload. err=%+v", err)
 	}
 
-	if err := client.UpdateMonster(l, mob, dp); err != nil {
+	if err := client.UpdateMonster(ctx, mob, dp); err != nil {
 		t.Fatalf("failed UpdateMonster. err=%+v", err)
 	}
 
@@ -57,8 +58,6 @@ func TestMonsterClient_UpdateMonster(t *testing.T) {
 }
 
 func TestBuildDQNPayload(t *testing.T) {
-	l := &slog.Log{}
-
 	candidates := []struct {
 		playerPositionMap map[string]*firedb.PlayerPosition
 		monsterPosition   *firedb.MonsterPosition
@@ -111,8 +110,9 @@ func TestBuildDQNPayload(t *testing.T) {
 		Angle: 180,
 	}
 
+	ctx := slog.WithLog(context.Background())
 	for i, v := range candidates {
-		dp, err := BuildDQNPayload(l, v.monsterPosition, v.playerPositionMap)
+		dp, err := BuildDQNPayload(ctx, v.monsterPosition, v.playerPositionMap)
 		if err != nil {
 			t.Fatalf("failed BuildDQNPayload. err=%+v", err)
 		}

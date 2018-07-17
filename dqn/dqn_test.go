@@ -1,8 +1,8 @@
 package dqn
 
 import (
+	"context"
 	"testing"
-	"time"
 
 	"github.com/sinmetal/slog"
 )
@@ -14,7 +14,7 @@ type DQNDummyClient struct {
 	DummyAnswer     *Answer
 }
 
-func (client *DQNDummyClient) Prediction(log *slog.Log, body *Payload) (*Answer, error) {
+func (client *DQNDummyClient) Prediction(ctx context.Context, body *Payload) (*Answer, error) {
 	client.PredictionCount++
 	client.Body = body
 	return client.DummyAnswer, nil
@@ -46,8 +46,8 @@ func TestSetDummyClient(t *testing.T) {
 	// DQNが中心ぐらいにいる状態
 	payload.Instances[0].State[(SenseRangeRow / 2)][(SenseRangeCol / 2)][1] = 1
 
-	slog := slog.Start(time.Now())
-	a, err := client.Prediction(&slog, payload)
+	ctx := slog.WithLog(context.Background())
+	a, err := client.Prediction(ctx, payload)
 	if err != nil {
 		t.Fatalf("failed Prediction. err = %+v", err)
 	}

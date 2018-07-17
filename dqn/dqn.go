@@ -1,8 +1,10 @@
 package dqn
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -73,7 +75,7 @@ type Answer struct {
 
 // Client is DQN APIを実行するClient
 type Client interface {
-	Prediction(log *slog.Log, body *Payload) (*Answer, error)
+	Prediction(ctx context.Context, body *Payload) (*Answer, error)
 }
 
 var client Client
@@ -95,10 +97,10 @@ func SetDummyClient(dummy Client) {
 }
 
 // Prediction is DQN APIを実行する実装
-func (d *dqnImpl) Prediction(log *slog.Log, body *Payload) (*Answer, error) {
+func (d *dqnImpl) Prediction(ctx context.Context, body *Payload) (*Answer, error) {
 	b, err := json.Marshal(body)
 	if err != nil {
-		log.Error(err.Error())
+		slog.Info(ctx, "FailedDQNPrediction", err.Error())
 		return nil, err
 	}
 
@@ -109,30 +111,30 @@ func (d *dqnImpl) Prediction(log *slog.Log, body *Payload) (*Answer, error) {
 		strings.NewReader(string(b)),
 	)
 	if err != nil {
-		log.Errorf("dqn request. err = %s", err.Error())
+		slog.Info(ctx, "FailedDQNPredictionRequest", err.Error())
 		return nil, err
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Errorf("dqn client.Do err = %s", err.Error())
+		slog.Info(ctx, "FailedDQNClientDo", err.Error())
 		return nil, err
 	}
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Errorf("dqn request.Body %s", err.Error())
+		slog.Info(ctx, "FailedReadDQNResponseBody", err.Error())
 		return nil, err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		log.Errorf("DQN Response Code = %d, Body = %s", res.StatusCode, resBody)
+		slog.Info(ctx, "FailedDQN", fmt.Sprintf("DQN Response Code = %d, Body = %s", res.StatusCode, resBody))
 		return nil, ErrDQNAPIResponse
 	}
 
 	var dqnRes = apiResponse{}
 	err = json.Unmarshal(resBody, &dqnRes)
 	if err != nil {
-		log.Errorf("dqn response json unmarshal error. err = %s, body = %s", err.Error(), resBody)
+		slog.Info(ctx, "FailedDQNResponseJsonUnmarshal", fmt.Sprintf("err = %s, body = %s", err.Error(), resBody))
 		return nil, err
 	}
 
