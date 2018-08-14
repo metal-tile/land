@@ -11,6 +11,7 @@ import (
 	"github.com/sinmetal/slog"
 	"github.com/sinmetal/stime"
 	"github.com/tenntenn/sync/recoverable"
+	"go.opencensus.io/trace"
 )
 
 var monsterPositionMap map[string]*firedb.MonsterPosition
@@ -67,6 +68,9 @@ func RunControlMonster(client *MonsterClient) error {
 }
 
 func handleMonster(ctx context.Context, client *MonsterClient, monsterID string) error {
+	ctx, span := trace.StartSpan(ctx, "/monster/handleMonster")
+	defer span.End()
+
 	if firedb.ExistsActivePlayer(client.PlayerStore.GetPlayerMapSnapshot()) == false {
 		return nil
 	}
@@ -93,6 +97,9 @@ func handleMonster(ctx context.Context, client *MonsterClient, monsterID string)
 
 // UpdateMonster is DQN Predictionに基づき、Firestore上のMonsterの位置を更新する
 func (client *MonsterClient) UpdateMonster(ctx context.Context, mob *firedb.MonsterPosition, dp *dqn.Payload) error {
+	ctx, span := trace.StartSpan(ctx, "/monster/updateMonster")
+	defer span.End()
+
 	ans, err := client.DQN.Prediction(ctx, dp)
 	if err != nil {
 		slog.Info(ctx, "DQNPayload", slog.KV{"DQNPayload", dp})
