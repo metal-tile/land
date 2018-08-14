@@ -52,9 +52,10 @@ func RunControlMonster(client *MonsterClient) error {
 				if err := f(); err != nil {
 					v, ok := recoverable.RecoveredValue(err)
 					if ok {
-						panic(v)
+						slog.Info(ctx, "FailedHandleMonster:RecoveredValue", fmt.Sprintf("%+v", v))
+					} else {
+						slog.Info(ctx, "FailedHandleMonster", fmt.Sprintf("%+v", err))
 					}
-					slog.Info(ctx, "FailedHandleMonster", fmt.Sprintf("%+v", err))
 				}
 
 				slog.Flush(ctx)

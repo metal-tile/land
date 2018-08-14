@@ -37,6 +37,7 @@ func NewPlayerStore() PlayerStore {
 		playerStore = &defaultPlayerStore{
 			playerMap:        make(map[string]*User),
 			positionMap:      make(map[string]*PlayerPosition),
+			playerMapMutex:   &sync.RWMutex{},
 			positionMapMutex: &sync.RWMutex{},
 		}
 	}
