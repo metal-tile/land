@@ -20,7 +20,10 @@
 
 [[projects]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
-  packages = ["."]
+  packages = [
+    ".",
+    "propagation"
+  ]
   revision = "37aa2801fbf0205003e15636096ebf0373510288"
   version = "v0.5.0"
 
@@ -44,7 +47,7 @@
   branch = "master"
   name = "github.com/google/pprof"
   packages = ["profile"]
-  revision = "3e1e08e68eaed0faefa67fe1c1e10e004cec2c9a"
+  revision = "cf6d271c80826ef4d30d55512b5a77b115bd4b9c"
 
 [[projects]]
   name = "github.com/googleapis/gax-go"
@@ -62,7 +65,7 @@
   branch = "master"
   name = "github.com/sinmetal/slog"
   packages = ["."]
-  revision = "2fa05f5d6e7d3d40d845f2b9c059ede8d8b1293a"
+  revision = "1679684947232fb80edc5f7235b93bfaf98849bb"
 
 [[projects]]
   branch = "master"
@@ -80,7 +83,6 @@
   name = "go.opencensus.io"
   packages = [
     ".",
-    "exporter/stackdriver/propagation",
     "internal",
     "internal/tagencoding",
     "plugin/ocgrpc",
@@ -110,7 +112,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "d0887baf81f4598189d4e12a37c6da86f0bba4d0"
+  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
 
 [[projects]]
   branch = "master"
@@ -122,13 +124,19 @@
     "jws",
     "jwt"
   ]
-  revision = "ef147856a6ddbb60760db74283d2424e98c87bff"
+  revision = "3d292e4d0cdc3a0113e6d207bb137145ef1de42f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sync"
   packages = ["semaphore"]
   revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  revision = "4e1fef5609515ec7a2cee7b5de30ba6d9b438cbf"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -164,7 +172,7 @@
     "transport/grpc",
     "transport/http"
   ]
-  revision = "0025a57598c017c1b9f7bc916c4fb8ae77315f9c"
+  revision = "0e8d13b5c025da6a7cf249bb854e5869921dd459"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -203,7 +211,7 @@
     "googleapis/type/latlng",
     "protobuf/field_mask"
   ]
-  revision = "2731d4fa720b67f9fe38e9051a2a9b38e4609260"
+  revision = "383e8b2c3b9e36c4076b235b32537292176bae20"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -222,7 +230,9 @@
     "internal",
     "internal/backoff",
     "internal/channelz",
+    "internal/envconfig",
     "internal/grpcrand",
+    "internal/transport",
     "keepalive",
     "metadata",
     "naming",
@@ -232,11 +242,10 @@
     "resolver/passthrough",
     "stats",
     "status",
-    "tap",
-    "transport"
+    "tap"
   ]
-  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
-  version = "v1.13.0"
+  revision = "32fb0ac620c32ba40a4626ddf94d90d12cce3455"
+  version = "v1.14.0"
 
 [solve-meta]
   analyzer-name = "dep"

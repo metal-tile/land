@@ -5,14 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 )
 
 // StackdriverLogEntry is Stackdriver Logging Entry
 type StackdriverLogEntry struct {
-	Severity string `json:"severity"`
-	LogName  string `json:"logName"`
-	Lines    []Line `json:"lines"`
+	Severity    string  `json:"severity"`
+	LogName     string  `json:"logName"`
+	Lines       []Line  `json:"lines"`
+	FlushCaller *Caller `json:"flushCaller"`
 }
 
 // Line is Application Log Entry
@@ -28,6 +30,13 @@ type Line struct {
 type KV struct {
 	Key   string      `json:"key"`
 	Value interface{} `json:"value"`
+}
+
+// Caller is 関数を呼び出したファイルや行数, 関数名を収めるstruct
+type Caller struct {
+	File string `json:"file"`
+	Line int    `json:"line"`
+	Func string `json:"func"`
 }
 
 type contextLogKey struct{}
@@ -56,19 +65,38 @@ func SetLogName(ctx context.Context, logName string) {
 	l.LogName = logName
 }
 
+// Debug is output info level Log
+func Debug(ctx context.Context, name string, body interface{}) {
+	log(ctx, "DEBUG", name, body)
+}
+
 // Info is output info level Log
 func Info(ctx context.Context, name string, body interface{}) {
+	log(ctx, "INFO", name, body)
+}
+
+// Warning is output info level Log
+func Warning(ctx context.Context, name string, body interface{}) {
+	log(ctx, "WARNING", name, body)
+}
+
+// Error is output info level Log
+func Error(ctx context.Context, name string, body interface{}) {
+	log(ctx, "ERROR", name, body)
+}
+
+func log(ctx context.Context, logLevel string, name string, body interface{}) {
 	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
 	if !ok {
 		panic(fmt.Sprintf("not contain log. body = %+v", body))
 	}
-	l.Severity = maxSeverity(l.Severity, "INFO")
+	l.Severity = maxSeverity(l.Severity, logLevel)
 	b, err := json.Marshal(body)
 	if err != nil {
 		panic(err)
 	}
 	l.Lines = append(l.Lines, Line{
-		Severity:  "INFO",
+		Severity:  logLevel,
 		Name:      name,
 		Body:      string(b),
 		Timestamp: time.Now(),
@@ -79,6 +107,21 @@ func Info(ctx context.Context, name string, body interface{}) {
 func Flush(ctx context.Context) {
 	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
 	if ok {
+		if len(l.Lines) < 1 {
+			return
+		}
+
+		pt, file, line, ok := runtime.Caller(1)
+		if !ok {
+			fmt.Println("スタックトレースの取得失敗")
+			return
+		}
+		funcName := runtime.FuncForPC(pt).Name()
+		l.FlushCaller = &Caller{
+			File: file,
+			Line: line,
+			Func: funcName,
+		}
 		encoder := json.NewEncoder(os.Stdout)
 		if err := encoder.Encode(l); err != nil {
 			_, err := os.Stdout.WriteString(err.Error())
@@ -109,6 +152,7 @@ func maxSeverity(severities ...string) (severity string) {
 		}
 		if lv > level {
 			severity = s
+			level = lv
 		}
 	}
 
