@@ -64,7 +64,7 @@ func RunControlMonster(client *MonsterClient) error {
 }
 
 func handleMonster(ctx context.Context, client *MonsterClient, monsterID string) error {
-	if firedb.ExistsActivePlayer(client.PlayerStore.GetPlayerMap()) == false {
+	if firedb.ExistsActivePlayer(client.PlayerStore.GetPlayerMapSnapshot()) == false {
 		return nil
 	}
 

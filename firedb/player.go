@@ -15,7 +15,7 @@ import (
 type PlayerStore interface {
 	Watch(ctx context.Context, path string) error
 	GetPosition(id string) *PlayerPosition
-	GetPlayerMap() map[string]*User
+	GetPlayerMapSnapshot() map[string]*User
 	GetPositionMapSnapshot() map[string]*PlayerPosition
 	SetPassiveUser(ctx context.Context, id string) error
 	UpdateActiveUser(ctx context.Context, id string, active bool) error
@@ -23,9 +23,10 @@ type PlayerStore interface {
 
 // defaultPlayerStore is Default PlayerStore Functions
 type defaultPlayerStore struct {
-	playerMap              map[string]*User
-	positionMap            map[string]*PlayerPosition
-	playerPositionMapMutex *sync.RWMutex
+	playerMap        map[string]*User
+	positionMap      map[string]*PlayerPosition
+	playerMapMutex   *sync.RWMutex
+	positionMapMutex *sync.RWMutex
 }
 
 var playerStore PlayerStore
@@ -34,9 +35,9 @@ var playerStore PlayerStore
 func NewPlayerStore() PlayerStore {
 	if playerStore == nil {
 		playerStore = &defaultPlayerStore{
-			playerMap:              make(map[string]*User),
-			positionMap:            make(map[string]*PlayerPosition),
-			playerPositionMapMutex: &sync.RWMutex{},
+			playerMap:        make(map[string]*User),
+			positionMap:      make(map[string]*PlayerPosition),
+			positionMapMutex: &sync.RWMutex{},
 		}
 	}
 	return playerStore
@@ -104,16 +105,23 @@ func (s *defaultPlayerStore) Watch(ctx context.Context, path string) error {
 	}
 }
 
-func (s *defaultPlayerStore) GetPlayerMap() map[string]*User {
-	return s.playerMap
+func (s *defaultPlayerStore) GetPlayerMapSnapshot() map[string]*User {
+	s.playerMapMutex.RLock()
+	defer s.playerMapMutex.RUnlock()
+
+	playerMap := make(map[string]*User)
+	for k, v := range s.playerMap {
+		playerMap[k] = v
+	}
+	return playerMap
 }
 
 // GetPositionMapSnapshot is PlayerPositionMapをCopyして返す
 // Copyしているのは、複数goroutineで使うことを考慮しているため。
 // Map全体を見る処理が軽い場合は、Copyせずに直接Lockを取った方が良いが、重たい処理をする時のためにSnapshotを取っている。
 func (s *defaultPlayerStore) GetPositionMapSnapshot() map[string]*PlayerPosition {
-	s.playerPositionMapMutex.RLock()
-	defer s.playerPositionMapMutex.RUnlock()
+	s.positionMapMutex.RLock()
+	defer s.positionMapMutex.RUnlock()
 
 	positionMap := make(map[string]*PlayerPosition)
 	for k, v := range s.positionMap {
