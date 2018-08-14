@@ -73,9 +73,10 @@ func handleMonster(ctx context.Context, client *MonsterClient, monsterID string)
 		slog.Info(ctx, "NotFoundMonster", fmt.Sprintf("%s is not found monsterPositionMap.", monsterID))
 		return nil
 	}
-	dp, err := BuildDQNPayload(ctx, mob, client.PlayerStore.GetPositionMap())
+	ppm := client.PlayerStore.GetPositionMapSnapshot()
+	dp, err := BuildDQNPayload(ctx, mob, ppm)
 	if err != nil {
-		slog.Info(ctx, "FailedBuildDQNPayload", fmt.Sprintf("failed BuildDQNPayload. %+v,%+v,%+v", mob, client.PlayerStore.GetPositionMap(), err)) // TODO LogLevelを変えるか？
+		slog.Info(ctx, "FailedBuildDQNPayload", fmt.Sprintf("failed BuildDQNPayload. %+v,%+v,%+v", mob, ppm, err)) // TODO LogLevelを変えるか？
 		return nil
 	}
 	err = client.UpdateMonster(ctx, mob, dp)

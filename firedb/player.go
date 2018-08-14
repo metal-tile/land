@@ -3,6 +3,7 @@ package firedb
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -15,15 +16,16 @@ type PlayerStore interface {
 	Watch(ctx context.Context, path string) error
 	GetPosition(id string) *PlayerPosition
 	GetPlayerMap() map[string]*User
-	GetPositionMap() map[string]*PlayerPosition
+	GetPositionMapSnapshot() map[string]*PlayerPosition
 	SetPassiveUser(ctx context.Context, id string) error
 	UpdateActiveUser(ctx context.Context, id string, active bool) error
 }
 
 // defaultPlayerStore is Default PlayerStore Functions
 type defaultPlayerStore struct {
-	playerMap   map[string]*User
-	positionMap map[string]*PlayerPosition
+	playerMap              map[string]*User
+	positionMap            map[string]*PlayerPosition
+	playerPositionMapMutex *sync.RWMutex
 }
 
 var playerStore PlayerStore
@@ -32,8 +34,9 @@ var playerStore PlayerStore
 func NewPlayerStore() PlayerStore {
 	if playerStore == nil {
 		playerStore = &defaultPlayerStore{
-			playerMap:   make(map[string]*User),
-			positionMap: make(map[string]*PlayerPosition),
+			playerMap:              make(map[string]*User),
+			positionMap:            make(map[string]*PlayerPosition),
+			playerPositionMapMutex: &sync.RWMutex{},
 		}
 	}
 	return playerStore
@@ -105,8 +108,19 @@ func (s *defaultPlayerStore) GetPlayerMap() map[string]*User {
 	return s.playerMap
 }
 
-func (s *defaultPlayerStore) GetPositionMap() map[string]*PlayerPosition {
-	return s.positionMap
+// GetPositionMapSnapshot is PlayerPositionMapをCopyして返す
+// Copyしているのは、複数goroutineで使うことを考慮しているため。
+// Map全体を見る処理が軽い場合は、Copyせずに直接Lockを取った方が良いが、重たい処理をする時のためにSnapshotを取っている。
+func (s *defaultPlayerStore) GetPositionMapSnapshot() map[string]*PlayerPosition {
+	s.playerPositionMapMutex.RLock()
+	defer s.playerPositionMapMutex.RUnlock()
+
+	positionMap := make(map[string]*PlayerPosition)
+	for k, v := range s.positionMap {
+		positionMap[k] = v
+	}
+
+	return positionMap
 }
 
 // GetPosition is 指定したIDのプレイヤーのポジションを取得
