@@ -18,7 +18,9 @@ func main() {
 	if err := profiler.Start(profiler.Config{Service: "land", ServiceVersion: "0.0.1"}); err != nil {
 		fmt.Printf("failed stackdriver.profiler.Start %+v", err)
 	}
-	exporter, err := stackdriver.NewExporter(stackdriver.Options{})
+	exporter, err := stackdriver.NewExporter(stackdriver.Options{
+		ProjectID: "metal-tile-dev1",
+	})
 	if err != nil {
 		panic(err)
 	}
