@@ -46,9 +46,11 @@ func RunControlMonster(client *MonsterClient) error {
 
 				f := recoverable.Func(func() {
 					if err := handleMonster(ctx, client, monsterID); err != nil {
-						panic(err) // TODO どうしようかな？
+						panic(err) // panicを上で拾ってもらうために投げる
 					}
 				})
+
+				// TODO recoverableの力を発揮するために、f() を go f() にする必要がある
 				if err := f(); err != nil {
 					v, ok := recoverable.RecoveredValue(err)
 					if ok {
@@ -77,12 +79,12 @@ func handleMonster(ctx context.Context, client *MonsterClient, monsterID string)
 	ppm := client.PlayerStore.GetPositionMapSnapshot()
 	dp, err := BuildDQNPayload(ctx, mob, ppm)
 	if err != nil {
-		slog.Info(ctx, "FailedBuildDQNPayload", fmt.Sprintf("failed BuildDQNPayload. %+v,%+v,%+v", mob, ppm, err)) // TODO LogLevelを変えるか？
+		slog.Warning(ctx, "FailedBuildDQNPayload", fmt.Sprintf("failed BuildDQNPayload. %+v,%+v,%+v", mob, ppm, err))
 		return nil
 	}
 	err = client.UpdateMonster(ctx, mob, dp)
 	if err != nil {
-		slog.Info(ctx, "FailedUpdateMonster", fmt.Sprintf("failed UpdateMonster. %+v", err)) // TODO LogLevelを変えるか？
+		slog.Warning(ctx, "FailedUpdateMonster", fmt.Sprintf("failed UpdateMonster. %+v", err))
 		return nil
 	}
 
