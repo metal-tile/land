@@ -68,12 +68,12 @@ func RunControlMonster(client *MonsterClient) error {
 }
 
 func handleMonster(ctx context.Context, client *MonsterClient, monsterID string) error {
-	ctx, span := trace.StartSpan(ctx, "/monster/handleMonster")
-	defer span.End()
-
 	if firedb.ExistsActivePlayer(client.PlayerStore.GetPlayerMapSnapshot()) == false {
 		return nil
 	}
+
+	ctx, span := trace.StartSpan(ctx, "/monster/handleMonster")
+	defer span.End()
 
 	mob, ok := monsterPositionMap[monsterID]
 	if !ok {
