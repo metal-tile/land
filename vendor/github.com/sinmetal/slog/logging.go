@@ -1,105 +1,160 @@
 package slog
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"os"
+	"runtime"
 	"time"
 )
 
-// Entry is Stackdriver Logging Entry
-type Entry struct {
-	Timestamp Timestamp `json:"timestamp"`
-	Message   string    `json:"message"`
+// StackdriverLogEntry is Stackdriver Logging Entry
+type StackdriverLogEntry struct {
+	Severity    string  `json:"severity"`
+	LogName     string  `json:"logName"`
+	Lines       []Line  `json:"lines"`
+	FlushCaller *Caller `json:"flushCaller"`
+}
+
+// Line is Application Log Entry
+// Stackdriver Logging JSON Payload
+type Line struct {
 	Severity  string    `json:"severity"`
-	severity  Severity
-	Thread    int64 `json:"thread"`
+	Name      string    `json:"name"`
+	Body      string    `json:"body"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
-// Timestamp is Stackdriver Logging Timestamp
-type Timestamp struct {
-	Seconds int64 `json:"seconds"`
-	Nanos   int   `json:"nanos"`
+// KV is Line Bodyに利用するKey Value struct
+type KV struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
 }
 
-// Log is Log Object
-type Log struct {
-	Entry    Entry    `json:"entry"`
-	Messages []string `json:"messages"`
+// Caller is 関数を呼び出したファイルや行数, 関数名を収めるstruct
+type Caller struct {
+	File string `json:"file"`
+	Line int    `json:"line"`
+	Func string `json:"func"`
 }
 
-// Info is Add Log Message for Info Level
-func (l *Log) Info(message string) {
-	m := strings.Replace(message, "\n", "", -1)
-	l.Messages = append(l.Messages, m)
-	l.setSeverity(INFO)
+type contextLogKey struct{}
+
+// WithLog is context.ValueにLogを入れたものを返す
+// Log周期開始時に利用する
+func WithLog(ctx context.Context) context.Context {
+	_, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
+	if ok {
+		return ctx
+	}
+
+	l := &StackdriverLogEntry{
+		Lines: []Line{},
+	}
+
+	return context.WithValue(ctx, contextLogKey{}, l)
 }
 
-// Infof is Add Log Message for Info Level
-func (l *Log) Infof(format string, v ...interface{}) {
-	l.Info(fmt.Sprintf(format, v...))
+// SetLogName is set LogName
+func SetLogName(ctx context.Context, logName string) {
+	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
+	if !ok {
+		panic(fmt.Sprintf("not contain log. logName = %+v", logName))
+	}
+	l.LogName = logName
 }
 
-// Error is Add Log Message for Error Level
-func (l *Log) Error(message string) {
-	m := strings.Replace(message, "\n", "", -1)
-	l.Messages = append(l.Messages, m)
-	l.setSeverity(ERROR)
+// Debug is output info level Log
+func Debug(ctx context.Context, name string, body interface{}) {
+	log(ctx, "DEBUG", name, body)
 }
 
-// Errorf is Add Log Message for Error Level
-func (l *Log) Errorf(format string, v ...interface{}) {
-	l.Error(fmt.Sprintf(format, v...))
+// Info is output info level Log
+func Info(ctx context.Context, name string, body interface{}) {
+	log(ctx, "INFO", name, body)
 }
 
-// Flush is Flush to Log
-func (l *Log) Flush() {
-	j, err := l.flush()
+// Warning is output info level Log
+func Warning(ctx context.Context, name string, body interface{}) {
+	log(ctx, "WARNING", name, body)
+}
+
+// Error is output info level Log
+func Error(ctx context.Context, name string, body interface{}) {
+	log(ctx, "ERROR", name, body)
+}
+
+func log(ctx context.Context, logLevel string, name string, body interface{}) {
+	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
+	if !ok {
+		panic(fmt.Sprintf("not contain log. body = %+v", body))
+	}
+	l.Severity = maxSeverity(l.Severity, logLevel)
+	b, err := json.Marshal(body)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		panic(err)
 	}
-	fmt.Printf("%s\n", string(j))
+	l.Lines = append(l.Lines, Line{
+		Severity:  logLevel,
+		Name:      name,
+		Body:      string(b),
+		Timestamp: time.Now(),
+	})
 }
 
-func (l *Log) setSeverity(severity Severity) {
-	if l.Entry.Severity == "" {
-		l.Entry.severity = severity
-		l.Entry.Severity = severity.String()
-		return
-	}
+// Flush is ログを出力する
+func Flush(ctx context.Context) {
+	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
+	if ok {
+		if len(l.Lines) < 1 {
+			return
+		}
 
-	if l.Entry.severity < severity {
-		l.Entry.severity = severity
-		l.Entry.Severity = severity.String()
-		return
+		pt, file, line, ok := runtime.Caller(1)
+		if !ok {
+			fmt.Println("スタックトレースの取得失敗")
+			return
+		}
+		funcName := runtime.FuncForPC(pt).Name()
+		l.FlushCaller = &Caller{
+			File: file,
+			Line: line,
+			Func: funcName,
+		}
+		encoder := json.NewEncoder(os.Stdout)
+		if err := encoder.Encode(l); err != nil {
+			_, err := os.Stdout.WriteString(err.Error())
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 }
 
-func (l *Log) flush() ([]byte, error) {
-	b, err := json.Marshal(l.Messages)
-	if err == nil {
-		l.Entry.Message = string(b)
-	} else {
-		return nil, err
+func maxSeverity(severities ...string) (severity string) {
+	severityLevel := make(map[string]int)
+	severityLevel["DEFAULT"] = 0
+	severityLevel["DEBUG"] = 100
+	severityLevel["INFO"] = 200
+	severityLevel["NOTICE"] = 300
+	severityLevel["WARNING"] = 400
+	severityLevel["ERROR"] = 500
+	severityLevel["CRITICAL"] = 600
+	severityLevel["ALERT"] = 700
+	severityLevel["EMERGENCY"] = 800
+
+	level := -1
+	for _, s := range severities {
+		lv, ok := severityLevel[s]
+		if !ok {
+			lv = -1
+		}
+		if lv > level {
+			severity = s
+			level = lv
+		}
 	}
 
-	b, err = json.Marshal(l.Entry)
-	if err == nil {
-		l.Messages = nil
-	}
-	return b, err
-}
-
-// Start is Start Logger
-func Start(now time.Time) Log {
-	return Log{
-		Entry: Entry{
-			Timestamp: Timestamp{
-				Seconds: now.Unix(),
-				Nanos:   now.Nanosecond(),
-			},
-			Thread: now.UnixNano(),
-		},
-	}
+	return severity
 }

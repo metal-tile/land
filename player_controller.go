@@ -17,7 +17,7 @@ func WatchPassivePlayer() error {
 			select {
 			case <-t.C:
 				ctx := context.Background()
-				pm := ps.GetPlayerMap()
+				pm := ps.GetPlayerMapSnapshot()
 				for k, v := range pm {
 					if v.Active == false {
 						continue
