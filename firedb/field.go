@@ -96,17 +96,17 @@ func (s *defaultFieldStore) Watch(ctx context.Context, path string) error {
 		if err != nil {
 			return err
 		}
-		dslist, err := dociter.GetAll()
+		dslist := dociter.Changes
 		if err != nil {
 			return err
 		}
 		for _, v := range dslist {
-			row, col, err := buildFieldRowCol(v.Ref.ID)
+			row, col, err := buildFieldRowCol(v.Doc.Ref.ID)
 			if err != nil {
 				return err
 			}
 			var fv FieldValue
-			if err := v.DataTo(&fv); err != nil {
+			if err := v.Doc.DataTo(&fv); err != nil {
 				return err
 			}
 			fv.Row = row

@@ -76,24 +76,24 @@ func (s *defaultPlayerStore) Watch(ctx context.Context, path string) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		dslist, err := dociter.GetAll()
+		dslist := dociter.Changes
 		if err != nil {
 			return errors.WithStack(err)
 		}
 		for _, v := range dslist {
 			// ReadTimeはアプリケーションが読み込んだ時間、 UpdateTimeはそのデータがFirestoreで読み込んだ時間のようだ
-			if stime.InTime(stime.Now(), v.UpdateTime, 10*time.Second) == false {
+			if stime.InTime(stime.Now(), v.Doc.UpdateTime, 10*time.Second) == false {
 				// 対象のデータが古い場合は、スルーする
 				continue
 			}
 
 			var pp PlayerPosition
-			pp.ID = v.Ref.ID
-			err := v.DataTo(&pp)
+			pp.ID = v.Doc.Ref.ID
+			err := v.Doc.DataTo(&pp)
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			pp.FirestoreUpdateAt = v.UpdateTime
+			pp.FirestoreUpdateAt = v.Doc.UpdateTime
 			s.positionMap[pp.ID] = &pp
 
 			if isChangeActiveStatus(s.playerMap, pp.ID) {
