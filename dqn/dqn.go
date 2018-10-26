@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/sinmetal/slog"
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -98,6 +99,9 @@ func SetDummyClient(dummy Client) {
 
 // Prediction is DQN APIを実行する実装
 func (d *dqnImpl) Prediction(ctx context.Context, body *Payload) (*Answer, error) {
+	ctx, span := trace.StartSpan(ctx, "/dqn")
+	defer span.End()
+
 	b, err := json.Marshal(body)
 	if err != nil {
 		slog.Info(ctx, "FailedDQNPrediction", err.Error())
