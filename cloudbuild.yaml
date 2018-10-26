@@ -3,8 +3,6 @@ steps:
   entrypoint: 'go'
   args: ['build', '.']
   env: ['GO111MODULE=on']
-- name: 'busybox'
-  args: ['./module']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '--tag=gcr.io/$PROJECT_ID/metal-tile/land/$BRANCH_NAME:$COMMIT_SHA', '.']
 - name: 'gcr.io/cloud-builders/docker'
