@@ -1,5 +1,5 @@
 steps:
-- name: 'golang:1.11.1-stretch'
+- name: 'golang:1.11.5-stretch'
   entrypoint: 'go'
   args: ['build', '.']
   env: ['GO111MODULE=on']
@@ -14,6 +14,6 @@ steps:
     - deployment/land-node
     - land-node=gcr.io/$PROJECT_ID/metal-tile/land/$BRANCH_NAME:$COMMIT_SHA
   env:
-    - 'CLOUDSDK_COMPUTE_ZONE=us-central1-f'
+    - 'CLOUDSDK_COMPUTE_ZONE=asia-northeast1-b'
     - 'CLOUDSDK_CONTAINER_CLUSTER=metal-tile'
 images: ['gcr.io/$PROJECT_ID/metal-tile/land/$BRANCH_NAME:$COMMIT_SHA']
