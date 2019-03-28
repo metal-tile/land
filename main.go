@@ -11,15 +11,21 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/metal-tile/land/dqn"
 	"github.com/metal-tile/land/firedb"
+	"github.com/sinmetal/gcpmetadata"
 	"go.opencensus.io/trace"
 )
 
 func main() {
+	projectID, err := gcpmetadata.GetProjectID()
+	if err != nil {
+		panic(err)
+	}
+
 	if err := profiler.Start(profiler.Config{Service: "land", ServiceVersion: "0.0.1"}); err != nil {
 		fmt.Printf("failed stackdriver.profiler.Start %+v", err)
 	}
 	exporter, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID: "metal-tile-dev1",
+		ProjectID: projectID,
 	})
 	if err != nil {
 		panic(err)
@@ -39,7 +45,7 @@ func main() {
 	fmt.Printf("onlyFuncActivate is %s\n", *onlyFuncActivate)
 
 	ctx := context.Background()
-	firedb.SetUp(ctx, "metal-tile-dev1")
+	firedb.SetUp(ctx, projectID)
 
 	ch := make(chan error)
 
