@@ -45,7 +45,9 @@ func main() {
 	fmt.Printf("onlyFuncActivate is %s\n", *onlyFuncActivate)
 
 	ctx := context.Background()
-	firedb.SetUp(ctx, projectID)
+	if err := firedb.SetUp(ctx, projectID); err != nil {
+		panic(err)
+	}
 
 	ch := make(chan error)
 
@@ -89,7 +91,9 @@ func main() {
 		http.HandleFunc("/field", fieldHandler)
 		http.HandleFunc("/player", playerHandler)
 		http.HandleFunc("/healthz", helthHandler)
-		http.ListenAndServe(":8080", nil)
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			panic(err)
+		}
 	}()
 
 	err = <-ch
