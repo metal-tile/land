@@ -44,8 +44,14 @@ func main() {
 	flag.Parse()
 	fmt.Printf("onlyFuncActivate is %s\n", *onlyFuncActivate)
 
+	fsProject := os.Getenv("FIRESTORE_PROJECT")
+	if len(fsProject) < 1 {
+		fsProject = projectID
+	}
+	fmt.Printf("FIRESTORE_PROJECT:%s\n", fsProject)
+
 	ctx := context.Background()
-	if err := firedb.SetUp(ctx, projectID); err != nil {
+	if err := firedb.SetUp(ctx, fsProject); err != nil {
 		panic(err)
 	}
 
